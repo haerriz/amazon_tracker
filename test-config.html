@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Config Test</title>
+</head>
+<body>
+    <h2>Configuration Test</h2>
+    <div id="results"></div>
+    
+    <script src="assets/js/config.js"></script>
+    <script>
+        document.getElementById('results').innerHTML = `
+            <p><strong>Hostname:</strong> ${window.location.hostname}</p>
+            <p><strong>Base URL:</strong> ${getBaseUrl()}</p>
+            <p><strong>Products API:</strong> ${API.products()}</p>
+            <p><strong>Add Product API:</strong> ${API.addProduct()}</p>
+        `;
+    </script>
+</body>
+</html>
