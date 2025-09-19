@@ -1,11 +1,20 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-require_once '../config/database.php';
-require_once 'scraper.php';
+try {
+    require_once '../config/database.php';
+    require_once 'scraper.php';
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to load dependencies: ' . $e->getMessage()]);
+    exit;
+}
 
 class ProductAPI {
     private $db;
@@ -175,6 +184,11 @@ class ProductAPI {
     }
 }
 
-$api = new ProductAPI();
-$api->handleRequest();
+try {
+    $api = new ProductAPI();
+    $api->handleRequest();
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+}
 ?>
