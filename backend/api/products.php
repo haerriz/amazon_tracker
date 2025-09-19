@@ -130,17 +130,25 @@ class ProductAPI {
     private function getProduct($asin) {
         $market = $_GET['market'] ?? 'IN';
         
-        $stmt = $this->db->prepare("
-            SELECT p.*, 
-                   ep.rating, ep.review_count, ep.discount_percentage, ep.original_price,
-                   ep.availability, ep.brand, ep.category, ep.features, ep.variants,
-                   ep.images, ep.description, ep.specifications, ep.seller,
-                   ep.prime_eligible, ep.delivery_info, ep.coupon,
-                   ep.price_analysis, ep.market_insights, ep.recommendation, ep.tracking_metrics
-            FROM products p 
-            LEFT JOIN enhanced_products ep ON p.id = ep.product_id
-            WHERE p.asin = ? AND p.market = ?
-        ");
+        // Check if enhanced_products table exists
+        $enhancedTableExists = $this->tableExists('enhanced_products');
+        
+        if ($enhancedTableExists) {
+            $stmt = $this->db->prepare("
+                SELECT p.*, 
+                       ep.rating, ep.review_count, ep.discount_percentage, ep.original_price,
+                       ep.availability, ep.brand, ep.category, ep.features, ep.variants,
+                       ep.images, ep.description, ep.specifications, ep.seller,
+                       ep.prime_eligible, ep.delivery_info, ep.coupon,
+                       ep.price_analysis, ep.market_insights, ep.recommendation, ep.tracking_metrics
+                FROM products p 
+                LEFT JOIN enhanced_products ep ON p.id = ep.product_id
+                WHERE p.asin = ? AND p.market = ?
+            ");
+        } else {
+            $stmt = $this->db->prepare("SELECT * FROM products WHERE asin = ? AND market = ?");
+        }
+        
         $stmt->execute([$asin, $market]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -150,49 +158,69 @@ class ProductAPI {
             return;
         }
         
-        // Parse JSON fields
-        $jsonFields = ['category', 'features', 'variants', 'images', 'specifications', 
-                      'price_analysis', 'market_insights', 'recommendation', 'tracking_metrics'];
-        foreach ($jsonFields as $field) {
-            if ($product[$field]) {
-                $product[$field] = json_decode($product[$field], true);
+        if ($enhancedTableExists) {
+            // Parse JSON fields
+            $jsonFields = ['category', 'features', 'variants', 'images', 'specifications', 
+                          'price_analysis', 'market_insights', 'recommendation', 'tracking_metrics'];
+            foreach ($jsonFields as $field) {
+                if ($product[$field]) {
+                    $product[$field] = json_decode($product[$field], true);
+                }
             }
+            
+            // Convert numeric fields
+            $product['rating'] = $product['rating'] ? floatval($product['rating']) : null;
+            $product['review_count'] = $product['review_count'] ? intval($product['review_count']) : null;
+            $product['original_price'] = $product['original_price'] ? floatval($product['original_price']) : null;
+            $product['prime_eligible'] = (bool)$product['prime_eligible'];
         }
         
-        // Convert numeric fields
-        $product['rating'] = $product['rating'] ? floatval($product['rating']) : null;
-        $product['review_count'] = $product['review_count'] ? intval($product['review_count']) : null;
         $product['current_price'] = floatval($product['current_price']);
-        $product['original_price'] = $product['original_price'] ? floatval($product['original_price']) : null;
-        $product['prime_eligible'] = (bool)$product['prime_eligible'];
 
         echo json_encode($product);
     }
 
     private function getAllProducts() {
-        $stmt = $this->db->prepare("
-            SELECT p.*, 
-                   pa.target_price,
-                   ep.rating,
-                   ep.review_count,
-                   ep.discount_percentage,
-                   ep.original_price,
-                   ep.availability,
-                   ep.brand,
-                   ep.prime_eligible,
-                   ep.seller,
-                   ep.recommendation,
-                   ep.price_analysis,
-                   ep.market_insights,
-                   (SELECT MIN(price) FROM price_history WHERE product_id = p.id) as lowest_price,
-                   (SELECT MAX(price) FROM price_history WHERE product_id = p.id) as highest_price,
-                   (SELECT AVG(price) FROM price_history WHERE product_id = p.id) as average_price,
-                   (SELECT COUNT(*) FROM price_history WHERE product_id = p.id) as price_count
-            FROM products p 
-            LEFT JOIN price_alerts pa ON p.id = pa.product_id 
-            LEFT JOIN enhanced_products ep ON p.id = ep.product_id
-            ORDER BY p.created_at DESC
-        ");
+        // Check if enhanced_products table exists
+        $enhancedTableExists = $this->tableExists('enhanced_products');
+        
+        if ($enhancedTableExists) {
+            $stmt = $this->db->prepare("
+                SELECT p.*, 
+                       pa.target_price,
+                       ep.rating,
+                       ep.review_count,
+                       ep.discount_percentage,
+                       ep.original_price,
+                       ep.availability,
+                       ep.brand,
+                       ep.prime_eligible,
+                       ep.seller,
+                       ep.recommendation,
+                       ep.price_analysis,
+                       ep.market_insights,
+                       (SELECT MIN(price) FROM price_history WHERE product_id = p.id) as lowest_price,
+                       (SELECT MAX(price) FROM price_history WHERE product_id = p.id) as highest_price,
+                       (SELECT AVG(price) FROM price_history WHERE product_id = p.id) as average_price,
+                       (SELECT COUNT(*) FROM price_history WHERE product_id = p.id) as price_count
+                FROM products p 
+                LEFT JOIN price_alerts pa ON p.id = pa.product_id 
+                LEFT JOIN enhanced_products ep ON p.id = ep.product_id
+                ORDER BY p.created_at DESC
+            ");
+        } else {
+            $stmt = $this->db->prepare("
+                SELECT p.*, 
+                       pa.target_price,
+                       (SELECT MIN(price) FROM price_history WHERE product_id = p.id) as lowest_price,
+                       (SELECT MAX(price) FROM price_history WHERE product_id = p.id) as highest_price,
+                       (SELECT AVG(price) FROM price_history WHERE product_id = p.id) as average_price,
+                       (SELECT COUNT(*) FROM price_history WHERE product_id = p.id) as price_count
+                FROM products p 
+                LEFT JOIN price_alerts pa ON p.id = pa.product_id 
+                ORDER BY p.created_at DESC
+            ");
+        }
         $stmt->execute();
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -203,42 +231,57 @@ class ProductAPI {
             $product['highest_price'] = floatval($product['highest_price']);
             $product['average_price'] = floatval($product['average_price']);
             $product['target_price'] = $product['target_price'] ? floatval($product['target_price']) : null;
-            $product['rating'] = $product['rating'] ? floatval($product['rating']) : null;
-            $product['review_count'] = $product['review_count'] ? intval($product['review_count']) : null;
-            $product['discount_percentage'] = $product['discount_percentage'] ? intval($product['discount_percentage']) : null;
-            $product['original_price'] = $product['original_price'] ? floatval($product['original_price']) : null;
-            $product['prime_eligible'] = (bool)$product['prime_eligible'];
             
-            // Parse JSON fields
-            $product['recommendation'] = $product['recommendation'] ? json_decode($product['recommendation'], true) : null;
-            $product['price_analysis'] = $product['price_analysis'] ? json_decode($product['price_analysis'], true) : null;
-            $product['market_insights'] = $product['market_insights'] ? json_decode($product['market_insights'], true) : null;
-            
-            // Calculate price assessment (fallback if no enhanced data)
-            if (!$product['recommendation']) {
+            if ($enhancedTableExists) {
+                $product['rating'] = $product['rating'] ? floatval($product['rating']) : null;
+                $product['review_count'] = $product['review_count'] ? intval($product['review_count']) : null;
+                $product['discount_percentage'] = $product['discount_percentage'] ? intval($product['discount_percentage']) : null;
+                $product['original_price'] = $product['original_price'] ? floatval($product['original_price']) : null;
+                $product['prime_eligible'] = (bool)$product['prime_eligible'];
+                
+                // Parse JSON fields
+                $product['recommendation'] = $product['recommendation'] ? json_decode($product['recommendation'], true) : null;
+                $product['price_analysis'] = $product['price_analysis'] ? json_decode($product['price_analysis'], true) : null;
+                $product['market_insights'] = $product['market_insights'] ? json_decode($product['market_insights'], true) : null;
+                
+                // Calculate price assessment (fallback if no enhanced data)
+                if (!$product['recommendation']) {
+                    $product['assessment'] = $this->calculatePriceAssessment(
+                        $product['current_price'],
+                        $product['lowest_price'],
+                        $product['highest_price'],
+                        $product['average_price']
+                    );
+                } else {
+                    $product['assessment'] = [
+                        'recommendation' => $product['recommendation']['level'] ?? 'wait',
+                        'confidence' => $product['recommendation']['confidence'] ?? 50,
+                        'message' => $product['recommendation']['message'] ?? 'No assessment available'
+                    ];
+                }
+                
+                // Add enhanced display fields
+                $product['display'] = [
+                    'price_with_currency' => '₹' . number_format($product['current_price'], 0),
+                    'discount_badge' => $product['discount_percentage'] ? $product['discount_percentage'] . '% OFF' : null,
+                    'rating_stars' => $product['rating'] ? str_repeat('★', floor($product['rating'])) . str_repeat('☆', 5 - floor($product['rating'])) : null,
+                    'review_text' => $product['review_count'] ? number_format($product['review_count']) . ' reviews' : null,
+                    'prime_badge' => $product['prime_eligible'] ? 'Prime' : null,
+                    'availability_color' => $this->getAvailabilityColor($product['availability'] ?? 'Unknown')
+                ];
+            } else {
+                // Fallback for basic data without enhanced table
                 $product['assessment'] = $this->calculatePriceAssessment(
                     $product['current_price'],
                     $product['lowest_price'],
                     $product['highest_price'],
                     $product['average_price']
                 );
-            } else {
-                $product['assessment'] = [
-                    'recommendation' => $product['recommendation']['level'] ?? 'wait',
-                    'confidence' => $product['recommendation']['confidence'] ?? 50,
-                    'message' => $product['recommendation']['message'] ?? 'No assessment available'
+                
+                $product['display'] = [
+                    'price_with_currency' => '₹' . number_format($product['current_price'], 0)
                 ];
             }
-            
-            // Add enhanced display fields
-            $product['display'] = [
-                'price_with_currency' => '₹' . number_format($product['current_price'], 0),
-                'discount_badge' => $product['discount_percentage'] ? $product['discount_percentage'] . '% OFF' : null,
-                'rating_stars' => $product['rating'] ? str_repeat('★', floor($product['rating'])) . str_repeat('☆', 5 - floor($product['rating'])) : null,
-                'review_text' => $product['review_count'] ? number_format($product['review_count']) . ' reviews' : null,
-                'prime_badge' => $product['prime_eligible'] ? 'Prime' : null,
-                'availability_color' => $this->getAvailabilityColor($product['availability'] ?? 'Unknown')
-            ];
         }
 
         echo json_encode($products);
@@ -427,6 +470,16 @@ class ProductAPI {
         if (strpos($availability, 'out of stock') !== false) return 'red';
         if (strpos($availability, 'temporarily') !== false) return 'orange';
         return 'grey';
+    }
+    
+    private function tableExists($tableName) {
+        try {
+            $stmt = $this->db->prepare("SHOW TABLES LIKE ?");
+            $stmt->execute([$tableName]);
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 }
 
