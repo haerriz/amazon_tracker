@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Test</title>
+</head>
+<body>
+    <h2>Backend API Test</h2>
+    <div id="results">Testing...</div>
+    
+    <script>
+        async function testBackend() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test 1: Simple backend test
+                console.log('Testing: /backend-test.php');
+                const response1 = await fetch('/backend-test.php');
+                const data1 = await response1.json();
+                results.innerHTML += `<p>✅ Backend Test: ${data1.status}</p>`;
+                
+                // Test 2: Products API
+                console.log('Testing: /backend/api/products.php');
+                const response2 = await fetch('/backend/api/products.php');
+                const data2 = await response2.json();
+                results.innerHTML += `<p>✅ Products API: Working (${data2.length || 0} products)</p>`;
+                
+            } catch (error) {
+                results.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+                console.error('Backend test error:', error);
+            }
+        }
+        
+        testBackend();
+    </script>
+</body>
+</html>

@@ -1,7 +1,8 @@
 <?php
 // Environment detection
 function isLocalEnvironment() {
-    return in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', 'localhost:8080']);
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    return in_array($host, ['localhost', '127.0.0.1', 'localhost:8080']);
 }
 
 // Database configuration
