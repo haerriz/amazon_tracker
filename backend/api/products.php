@@ -54,6 +54,11 @@ class ProductAPI {
                     $this->setAlert($segments[3]);
                 }
                 break;
+            case 'DELETE':
+                if (isset($segments[3])) {
+                    $this->deleteProduct($segments[3]);
+                }
+                break;
         }
     }
 
@@ -180,6 +185,25 @@ class ProductAPI {
         $stmt = $this->db->prepare("INSERT INTO price_alerts (product_id, target_price) VALUES (?, ?) ON DUPLICATE KEY UPDATE target_price = ?");
         $stmt->execute([$product['id'], $targetPrice, $targetPrice]);
 
+        echo json_encode(['success' => true]);
+    }
+    
+    private function deleteProduct($asin) {
+        $market = $_GET['market'] ?? 'IN';
+        
+        $stmt = $this->db->prepare("SELECT id FROM products WHERE asin = ? AND market = ?");
+        $stmt->execute([$asin, $market]);
+        $product = $stmt->fetch();
+        
+        if (!$product) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Product not found']);
+            return;
+        }
+        
+        $stmt = $this->db->prepare("DELETE FROM products WHERE asin = ? AND market = ?");
+        $stmt->execute([$asin, $market]);
+        
         echo json_encode(['success' => true]);
     }
 }

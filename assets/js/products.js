@@ -139,23 +139,61 @@ async function addProduct() {
   }
 }
 
-function setTarget(productId) {
+async function setTarget(productId) {
   const value = $(`.target-input[data-id='${productId}']`).val();
-  const db = readDB();
   
-  if (db.products[productId]) {
-    db.products[productId].target = value ? Number(value) : null;
-    writeDB(db);
-    M.toast({ html: 'Alert saved' });
+  if (!value) {
+    M.toast({ html: 'Please enter a target price' });
+    return;
+  }
+  
+  try {
+    // Extract ASIN and market from productId
+    const parts = String(productId).split('-');
+    const market = parts.pop();
+    const asin = parts.join('-');
+    
+    const response = await fetch(API.setAlert(asin), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        market: market,
+        target_price: Number(value)
+      })
+    });
+    
+    if (response.ok) {
+      M.toast({ html: 'Alert saved successfully!' });
+    } else {
+      M.toast({ html: 'Failed to save alert' });
+    }
+  } catch (error) {
+    M.toast({ html: 'Error saving alert' });
   }
 }
 
-function removeProduct(productId) {
-  const db = readDB();
-  delete db.products[productId];
-  writeDB(db);
-  refreshList();
-  M.toast({ html: 'Removed' });
+async function removeProduct(productId) {
+  try {
+    // Extract ASIN and market from productId
+    const parts = String(productId).split('-');
+    const market = parts.pop();
+    const asin = parts.join('-');
+    
+    const response = await fetch(API.deleteProduct(asin, market), {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      M.toast({ html: 'Product removed successfully!' });
+      loadProducts();
+    } else {
+      M.toast({ html: 'Failed to remove product' });
+    }
+  } catch (error) {
+    M.toast({ html: 'Error removing product' });
+  }
 }
 
 function alertCheck(product) {
