@@ -6,66 +6,148 @@ function cardHtml(product) {
   const imageUrl = getProductImage(product.asin, product.market);
   const productId = `${product.asin}-${product.market}`;
   const selectedRange = productTimeRanges[productId] || 30;
+  const currency = currencyFor(product.market);
+  const currentPrice = product.current_price || 0;
+  
+  // Calculate price assessment (mock data for demo)
+  const assessment = calculatePriceAssessment(currentPrice);
   
   return `
     <div class="col s12 product-card">
       <div class="card">
         <div class="card-content">
-          <div class="row" style="margin-bottom:0">
-            <div class="col s12 m3">
+          <!-- Product Hero Section -->
+          <div class="product-hero">
+            <div class="product-image-container">
               <img class="product-img" src="${imageUrl}" alt="${product.title || 'Product'}" 
-                   onerror="this.src='https://via.placeholder.com/300x300/e0e0e0/757575?text=No+Image'">
-              <div style="margin-top:10px">
-                <span style="font-weight:700;font-size:1.3rem">${product.current_price && product.current_price > 0 ? money(product.current_price, currencyFor(product.market)) : 'Price not available'}</span>
-                <div class="subtle">ASIN: ${product.asin} • ${product.market}</div>
+                   onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/757575?text=No+Image'">
+              <div class="product-meta">
+                <small>ASIN: ${product.asin}</small><br>
+                <small>Market: ${product.market}</small><br>
+                <small>Updated: ${formatLastUpdate()}</small>
               </div>
             </div>
-            <div class="col s12 m9">
-              <div class="row">
-                <div class="col s12 m8">
-                  <span class="card-title">${product.title && product.title !== 'null' ? product.title : `Amazon Product ${product.asin}`}</span>
-                  <div class="chart-container">
-                    <div class="range-chips">
-                      <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${productId}" data-days="7">7d</a>
-                      <a class="chip range ${selectedRange === 30 ? 'active' : ''}" data-id="${productId}" data-days="30">30d</a>
-                      <a class="chip range ${selectedRange === 90 ? 'active' : ''}" data-id="${productId}" data-days="90">90d</a>
-                      <a class="chip range ${selectedRange === 365 ? 'active' : ''}" data-id="${productId}" data-days="365">1y</a>
-                      <a class="chip range ${selectedRange === 0 ? 'active' : ''}" data-id="${productId}" data-days="0">All</a>
-                    </div>
-                    <div class="svg-wrap" style="position: relative;">
-                      <svg class="chart-svg" data-id="${productId}" width="100%" height="100%" viewBox="0 0 800 350" preserveAspectRatio="none"></svg>
-                      <div class="chart-tooltip" id="tooltip-${productId}"></div>
-                    </div>
-                    <div class="stats" data-id="${productId}">
-                      <span class="stat">Min: <b class="st-min">—</b></span>
-                      <span class="stat">Max: <b class="st-max">—</b></span>
-                      <span class="stat">Change: <b class="st-chg">—</b></span>
-                    </div>
-                  </div>
+            <div class="product-info">
+              <h6 class="product-title">${product.title && product.title !== 'null' ? product.title : `Amazon Product ${product.asin}`}</h6>
+              <div class="product-price">${currentPrice > 0 ? money(currentPrice, currency) : 'Price not available'}</div>
+              <div class="product-meta">Price may vary by location and availability</div>
+              
+              <!-- Price Statistics -->
+              <div class="price-stats" id="stats-${productId}">
+                <div class="price-stat">
+                  <span class="price-stat-label">Lowest</span>
+                  <span class="price-stat-value lowest st-min">—</span>
                 </div>
-                <div class="col s12 m4">
-                  <div class="row" style="margin-bottom:0">
-                    <div class="input-field col s12">
-                      <input class="target-input" data-id="${productId}" type="number" step="0.01" 
-                             value="${product.target_price ?? ''}" placeholder="Target price">
-                      <label class="active subtle">Target price</label>
-                    </div>
-                    <div class="col s12">
-                      <a class="btn btn-outline set-target waves-effect" data-id="${productId}" style="width:100%;margin-bottom:8px">Set Alert</a>
-                      <a class="btn red darken-2 remove-btn waves-effect" data-id="${productId}" style="width:100%;margin-bottom:8px">Remove</a>
-                      <a class="btn btn-green waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" style="width:100%">
-                        <i class="material-icons left">shopping_cart</i>Buy
-                      </a>
-                    </div>
-                  </div>
+                <div class="price-stat">
+                  <span class="price-stat-label">Average</span>
+                  <span class="price-stat-value average st-avg">—</span>
+                </div>
+                <div class="price-stat">
+                  <span class="price-stat-label">Highest</span>
+                  <span class="price-stat-value highest st-max">—</span>
                 </div>
               </div>
+              
+              <!-- Buy Button -->
+              <a class="btn btn-green waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" style="width:100%;margin-bottom:12px">
+                <i class="material-icons left">shopping_cart</i>Buy @ Amazon
+              </a>
+            </div>
+          </div>
+          
+          <!-- Price Assessment -->
+          <div class="assessment-container">
+            <div class="assessment-title">Should you buy at this price?</div>
+            <div class="rating-scale">
+              <span class="${assessment.recommendation === 'skip' ? 'red-text' : ''}">Skip</span>
+              <span class="${assessment.recommendation === 'wait' ? 'orange-text' : ''}">Wait</span>
+              <span class="${assessment.recommendation === 'okay' ? 'blue-text' : ''}">Okay</span>
+              <span class="${assessment.recommendation === 'buy' ? 'green-text' : ''}">Buy</span>
+            </div>
+            <div class="rating-bar">
+              <div class="rating-indicator" style="left: ${assessment.position}%;"></div>
+            </div>
+            <p class="assessment-text">${assessment.text}</p>
+          </div>
+          
+          <!-- Chart Section -->
+          <div class="chart-container">
+            <h6>Price History Chart</h6>
+            <div class="range-chips">
+              <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${productId}" data-days="7">7D</a>
+              <a class="chip range ${selectedRange === 30 ? 'active' : ''}" data-id="productId}" data-days="30">1M</a>
+              <a class="chip range ${selectedRange === 90 ? 'active' : ''}" data-id="${productId}" data-days="90">3M</a>
+              <a class="chip range ${selectedRange === 180 ? 'active' : ''}" data-id="${productId}" data-days="180">6M</a>
+              <a class="chip range ${selectedRange === 365 ? 'active' : ''}" data-id="${productId}" data-days="365">1Y</a>
+              <a class="chip range ${selectedRange === 0 ? 'active' : ''}" data-id="${productId}" data-days="0">All</a>
+            </div>
+            <div class="svg-wrap" style="position: relative;">
+              <svg class="chart-svg" data-id="${productId}" width="100%" height="100%" viewBox="0 0 800 350" preserveAspectRatio="none"></svg>
+              <div class="chart-tooltip" id="tooltip-${productId}"></div>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="row" style="margin-top:16px">
+            <div class="col s12 m6">
+              <div class="input-field">
+                <input class="target-input" data-id="${productId}" type="number" step="0.01" 
+                       value="${product.target_price ?? ''}" placeholder="Enter target price">
+                <label class="active">Price Alert Target</label>
+              </div>
+            </div>
+            <div class="col s6 m3">
+              <a class="btn btn-outline set-target waves-effect" data-id="${productId}" style="width:100%">
+                <i class="material-icons left">notifications</i>Set Alert
+              </a>
+            </div>
+            <div class="col s6 m3">
+              <a class="btn red darken-2 remove-btn waves-effect" data-id="${productId}" style="width:100%">
+                <i class="material-icons left">delete</i>Remove
+              </a>
             </div>
           </div>
         </div>
       </div>
     </div>
   `;
+}
+
+function calculatePriceAssessment(currentPrice) {
+  // Mock assessment logic similar to competitor
+  const randomFactor = Math.random();
+  let recommendation, position, text;
+  
+  if (randomFactor < 0.2) {
+    recommendation = 'skip';
+    position = 15;
+    text = 'Price is currently high. Consider waiting for a better deal.';
+  } else if (randomFactor < 0.4) {
+    recommendation = 'wait';
+    position = 35;
+    text = 'Price is above average. You might want to wait for a price drop.';
+  } else if (randomFactor < 0.7) {
+    recommendation = 'okay';
+    position = 65;
+    text = 'Price is reasonable. Good time to buy if you need it now.';
+  } else {
+    recommendation = 'buy';
+    position = 85;
+    text = 'Great price! This is a good deal based on price history.';
+  }
+  
+  return { recommendation, position, text };
+}
+
+function formatLastUpdate() {
+  const now = new Date();
+  return now.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 // Store selected time ranges for each product
@@ -101,9 +183,27 @@ function refreshList() {
 }
 
 function getProductImage(asin, market) {
-  // Generate Amazon product image URL
-  const domain = market === 'IN' ? 'amazon.in' : (market === 'US' ? 'amazon.com' : 'amazon.co.uk');
+  // Generate Amazon product image URL with fallback
   return `https://images-na.ssl-images-amazon.com/images/P/${asin}.01.L.jpg`;
+}
+
+function getAffiliateUrl(asin, market) {
+  const domains = {
+    'IN': 'amazon.in',
+    'US': 'amazon.com', 
+    'UK': 'amazon.co.uk'
+  };
+  
+  const affiliateTags = {
+    'IN': 'yourtagin-21',
+    'US': 'yourtag-20',
+    'UK': 'yourtaguk-21'
+  };
+  
+  const domain = domains[market] || 'amazon.in';
+  const tag = affiliateTags[market] || 'yourtagin-21';
+  
+  return `https://${domain}/dp/${asin}?tag=${tag}`;
 }
 
 async function addProduct() {

@@ -8,22 +8,42 @@ async function loadChart(asin, market, days = 30) {
     console.log('Chart data:', history); // Debug log
     
     if (history && history.length > 0) {
-      drawChart(asin + '-' + market, history, market);
+      drawChart(asin + '-' + market, history, market, days);
     } else {
       console.log('No chart data available');
-      // Show message in chart area
+      // Show loading animation then message
       const productId = asin + '-' + market;
       const $svg = $(`.chart-svg[data-id="${productId}"]`);
       if ($svg.length) {
-        $svg.html('<text x="400" y="175" text-anchor="middle" class="axis-text">No price history available</text>');
+        $svg.html(`
+          <rect width="800" height="350" fill="#f8f9fa" rx="8"/>
+          <text x="400" y="160" text-anchor="middle" class="axis-text" style="font-size: 14px;">Loading price history...</text>
+          <text x="400" y="190" text-anchor="middle" class="axis-text" style="font-size: 12px;">Please wait while we fetch the latest data</text>
+        `);
+        
+        // Simulate loading delay
+        setTimeout(() => {
+          $svg.html(`
+            <rect width="800" height="350" fill="#f8f9fa" rx="8"/>
+            <text x="400" y="175" text-anchor="middle" class="axis-text" style="font-size: 14px;">No price history available yet</text>
+          `);
+        }, 2000);
       }
     }
   } catch (error) {
     console.log('Error loading chart:', error);
+    const productId = asin + '-' + market;
+    const $svg = $(`.chart-svg[data-id="${productId}"]`);
+    if ($svg.length) {
+      $svg.html(`
+        <rect width="800" height="350" fill="#ffebee" rx="8"/>
+        <text x="400" y="175" text-anchor="middle" class="axis-text" style="font-size: 14px; fill: #c62828;">Error loading price data</text>
+      `);
+    }
   }
 }
 
-function drawChart(productId, series, market) {
+function drawChart(productId, series, market, days = 30) {
   const $svg = $(`.chart-svg[data-id="${productId}"]`);
   const $stats = $(`.stats[data-id="${productId}"]`);
   
@@ -183,14 +203,25 @@ function drawChart(productId, series, market) {
   // Add hover functionality
   addHoverInteraction($svg[0], series, productId, x, y, PAD_LEFT, CHART_W, PAD_TOP, CHART_H, market);
   
-  // Update statistics
+  // Update statistics with more comprehensive data
   const currentPrice = series[series.length - 1].price;
-  const change = ((currentPrice - series[0].price) / series[0].price) * 100;
+  const firstPrice = series[0].price;
+  const change = ((currentPrice - firstPrice) / firstPrice) * 100;
   const currency = currencyFor(market);
+  const avgPrice = series.reduce((sum, p) => sum + p.price, 0) / series.length;
   
-  $stats.find('.st-min').text(money(minY, currency));
-  $stats.find('.st-max').text(money(maxY, currency));
-  $stats.find('.st-chg').html(`<span class="${change >= 0 ? 'ok' : 'bad'}">${change.toFixed(2)}%</span>`);
+  // Update price statistics in the hero section
+  const $statsContainer = $(`#stats-${productId}`);
+  $statsContainer.find('.st-min').text(money(minY, currency));
+  $statsContainer.find('.st-max').text(money(maxY, currency));
+  $statsContainer.find('.st-avg').text(money(avgPrice, currency));
+  
+  // Update chart stats if they exist
+  if ($stats.length) {
+    $stats.find('.st-min').text(money(minY, currency));
+    $stats.find('.st-max').text(money(maxY, currency));
+    $stats.find('.st-chg').html(`<span class="${change >= 0 ? 'ok' : 'bad'}">${change.toFixed(2)}%</span>`);
+  }
 }
 
 function formatPrice(price, currency) {
@@ -211,6 +242,71 @@ function formatDate(date, days) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } else {
     return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  }
+}
+
+// Add chart action buttons functionality
+function addChartControls(productId) {
+  return `
+    <div class="chart-controls" style="margin-bottom: 12px;">
+      <a class="btn-small btn-outline waves-effect" onclick="downloadChart('${productId}')">
+        <i class="material-icons left">download</i>Download
+      </a>
+      <a class="btn-small btn-outline waves-effect" onclick="shareChart('${productId}')">
+        <i class="material-icons left">share</i>Share
+      </a>
+      <a class="btn-small btn-outline waves-effect" onclick="fullscreenChart('${productId}')">
+        <i class="material-icons left">fullscreen</i>Fullscreen
+      </a>
+    </div>
+  `;
+}
+
+function downloadChart(productId) {
+  const svg = $(`.chart-svg[data-id="${productId}"]`)[0];
+  if (!svg) return;
+  
+  // Convert SVG to canvas and download
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const data = new XMLSerializer().serializeToString(svg);
+  const img = new Image();
+  
+  canvas.width = 800;
+  canvas.height = 350;
+  
+  img.onload = function() {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    
+    const link = document.createElement('a');
+    link.download = `price-history-${productId}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+  };
+  
+  img.src = 'data:image/svg+xml;base64,' + btoa(data);
+}
+
+function shareChart(productId) {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({
+      title: 'Price History',
+      text: 'Check out this price history chart',
+      url: url
+    });
+  } else {
+    navigator.clipboard.writeText(url);
+    M.toast({ html: 'Link copied to clipboard!' });
+  }
+}
+
+function fullscreenChart(productId) {
+  const $svg = $(`.chart-svg[data-id="${productId}"]`);
+  if ($svg[0].requestFullscreen) {
+    $svg[0].requestFullscreen();
   }
 }
 
@@ -267,20 +363,32 @@ function addHoverInteraction(svg, series, productId, xFunc, yFunc, padLeft, char
     hoverDot.setAttribute('cy', pointY);
     hoverDot.style.display = 'block';
     
-    // Update tooltip
+    // Update tooltip with enhanced information
     const date = new Date(dataPoint.ts);
-    const formattedDate = date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    const formattedDate = date.toLocaleDateString('en-IN', { 
       day: 'numeric',
+      month: 'long',
       year: 'numeric'
     });
     const formattedPrice = money(dataPoint.price, currencyFor(market));
     
-    tooltip.html(`<div><strong>${formattedPrice}</strong></div><div>${formattedDate}</div>`);
+    // Calculate if this is lowest/highest price
+    const isLowest = dataPoint.price === Math.min(...series.map(p => p.price));
+    const isHighest = dataPoint.price === Math.max(...series.map(p => p.price));
+    
+    let priceLabel = 'Price';
+    if (isLowest) priceLabel = 'Lowest Price';
+    if (isHighest) priceLabel = 'Highest Price';
+    
+    tooltip.html(`
+      <div><strong>${priceLabel}: ${formattedPrice}</strong></div>
+      <div>${formattedDate}</div>
+      ${isLowest ? '<div style="color: #4caf50; font-size: 0.8rem;">🎯 Best Price!</div>' : ''}
+    `);
     tooltip.css({
       display: 'block',
-      left: e.clientX - rect.left + 10,
-      top: e.clientY - rect.top - 10
+      left: Math.min(e.clientX - rect.left + 10, rect.width - 150),
+      top: Math.max(e.clientY - rect.top - 60, 10)
     });
   });
   

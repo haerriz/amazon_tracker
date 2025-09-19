@@ -130,7 +130,17 @@ class ProductAPI {
     private function getProduct($asin) {
         $market = $_GET['market'] ?? 'IN';
         
-        $stmt = $this->db->prepare("SELECT * FROM products WHERE asin = ? AND market = ?");
+        $stmt = $this->db->prepare("
+            SELECT p.*, 
+                   ep.rating, ep.review_count, ep.discount_percentage, ep.original_price,
+                   ep.availability, ep.brand, ep.category, ep.features, ep.variants,
+                   ep.images, ep.description, ep.specifications, ep.seller,
+                   ep.prime_eligible, ep.delivery_info, ep.coupon,
+                   ep.price_analysis, ep.market_insights, ep.recommendation, ep.tracking_metrics
+            FROM products p 
+            LEFT JOIN enhanced_products ep ON p.id = ep.product_id
+            WHERE p.asin = ? AND p.market = ?
+        ");
         $stmt->execute([$asin, $market]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -139,14 +149,97 @@ class ProductAPI {
             echo json_encode(['error' => 'Product not found']);
             return;
         }
+        
+        // Parse JSON fields
+        $jsonFields = ['category', 'features', 'variants', 'images', 'specifications', 
+                      'price_analysis', 'market_insights', 'recommendation', 'tracking_metrics'];
+        foreach ($jsonFields as $field) {
+            if ($product[$field]) {
+                $product[$field] = json_decode($product[$field], true);
+            }
+        }
+        
+        // Convert numeric fields
+        $product['rating'] = $product['rating'] ? floatval($product['rating']) : null;
+        $product['review_count'] = $product['review_count'] ? intval($product['review_count']) : null;
+        $product['current_price'] = floatval($product['current_price']);
+        $product['original_price'] = $product['original_price'] ? floatval($product['original_price']) : null;
+        $product['prime_eligible'] = (bool)$product['prime_eligible'];
 
         echo json_encode($product);
     }
 
     private function getAllProducts() {
-        $stmt = $this->db->prepare("SELECT * FROM products ORDER BY created_at DESC");
+        $stmt = $this->db->prepare("
+            SELECT p.*, 
+                   pa.target_price,
+                   ep.rating,
+                   ep.review_count,
+                   ep.discount_percentage,
+                   ep.original_price,
+                   ep.availability,
+                   ep.brand,
+                   ep.prime_eligible,
+                   ep.seller,
+                   ep.recommendation,
+                   ep.price_analysis,
+                   ep.market_insights,
+                   (SELECT MIN(price) FROM price_history WHERE product_id = p.id) as lowest_price,
+                   (SELECT MAX(price) FROM price_history WHERE product_id = p.id) as highest_price,
+                   (SELECT AVG(price) FROM price_history WHERE product_id = p.id) as average_price,
+                   (SELECT COUNT(*) FROM price_history WHERE product_id = p.id) as price_count
+            FROM products p 
+            LEFT JOIN price_alerts pa ON p.id = pa.product_id 
+            LEFT JOIN enhanced_products ep ON p.id = ep.product_id
+            ORDER BY p.created_at DESC
+        ");
         $stmt->execute();
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Add calculated fields and parse JSON
+        foreach ($products as &$product) {
+            $product['current_price'] = floatval($product['current_price']);
+            $product['lowest_price'] = floatval($product['lowest_price']);
+            $product['highest_price'] = floatval($product['highest_price']);
+            $product['average_price'] = floatval($product['average_price']);
+            $product['target_price'] = $product['target_price'] ? floatval($product['target_price']) : null;
+            $product['rating'] = $product['rating'] ? floatval($product['rating']) : null;
+            $product['review_count'] = $product['review_count'] ? intval($product['review_count']) : null;
+            $product['discount_percentage'] = $product['discount_percentage'] ? intval($product['discount_percentage']) : null;
+            $product['original_price'] = $product['original_price'] ? floatval($product['original_price']) : null;
+            $product['prime_eligible'] = (bool)$product['prime_eligible'];
+            
+            // Parse JSON fields
+            $product['recommendation'] = $product['recommendation'] ? json_decode($product['recommendation'], true) : null;
+            $product['price_analysis'] = $product['price_analysis'] ? json_decode($product['price_analysis'], true) : null;
+            $product['market_insights'] = $product['market_insights'] ? json_decode($product['market_insights'], true) : null;
+            
+            // Calculate price assessment (fallback if no enhanced data)
+            if (!$product['recommendation']) {
+                $product['assessment'] = $this->calculatePriceAssessment(
+                    $product['current_price'],
+                    $product['lowest_price'],
+                    $product['highest_price'],
+                    $product['average_price']
+                );
+            } else {
+                $product['assessment'] = [
+                    'recommendation' => $product['recommendation']['level'] ?? 'wait',
+                    'confidence' => $product['recommendation']['confidence'] ?? 50,
+                    'message' => $product['recommendation']['message'] ?? 'No assessment available'
+                ];
+            }
+            
+            // Add enhanced display fields
+            $product['display'] = [
+                'price_with_currency' => '₹' . number_format($product['current_price'], 0),
+                'discount_badge' => $product['discount_percentage'] ? $product['discount_percentage'] . '% OFF' : null,
+                'rating_stars' => $product['rating'] ? str_repeat('★', floor($product['rating'])) . str_repeat('☆', 5 - floor($product['rating'])) : null,
+                'review_text' => $product['review_count'] ? number_format($product['review_count']) . ' reviews' : null,
+                'prime_badge' => $product['prime_eligible'] ? 'Prime' : null,
+                'availability_color' => $this->getAvailabilityColor($product['availability'] ?? 'Unknown')
+            ];
+        }
 
         echo json_encode($products);
     }
@@ -266,15 +359,74 @@ class ProductAPI {
     }
     
     private function generatePriceHistory($productId, $currentPrice) {
-        // Generate 30 days of price history
+        // Generate realistic price history similar to competitor
         $stmt = $this->db->prepare("INSERT INTO price_history (product_id, price, timestamp) VALUES (?, ?, ?)");
         
-        for ($i = 30; $i > 0; $i--) {
+        $basePrice = $currentPrice;
+        $trend = rand(-1, 1); // -1 = declining, 0 = stable, 1 = rising
+        
+        for ($i = 90; $i > 0; $i--) {
             $date = date('Y-m-d H:i:s', strtotime("-{$i} days"));
-            $variation = ($currentPrice * 0.1) * (rand(-100, 100) / 100); // ±10% variation
-            $historicalPrice = max(1, $currentPrice + $variation);
+            
+            // Create more realistic price variations
+            $dayVariation = (rand(-50, 50) / 1000); // ±5% daily variation
+            $trendEffect = ($trend * $i * 0.001); // Gradual trend over time
+            $seasonalEffect = sin($i / 30) * 0.02; // Seasonal variation
+            
+            $totalVariation = $dayVariation + $trendEffect + $seasonalEffect;
+            $historicalPrice = $basePrice * (1 + $totalVariation);
+            
+            // Ensure price stays within reasonable bounds
+            $historicalPrice = max($basePrice * 0.7, min($basePrice * 1.4, $historicalPrice));
+            
             $stmt->execute([$productId, round($historicalPrice, 2), $date]);
         }
+    }
+    
+    private function calculatePriceAssessment($currentPrice, $lowestPrice, $highestPrice, $averagePrice) {
+        if (!$currentPrice || !$lowestPrice || !$highestPrice) {
+            return [
+                'recommendation' => 'wait',
+                'confidence' => 50,
+                'message' => 'Insufficient data for assessment'
+            ];
+        }
+        
+        $priceRange = $highestPrice - $lowestPrice;
+        $currentPosition = ($currentPrice - $lowestPrice) / $priceRange;
+        
+        // Calculate recommendation based on price position
+        if ($currentPosition <= 0.25) {
+            $recommendation = 'buy';
+            $message = 'Excellent price! This is close to the lowest recorded price.';
+        } elseif ($currentPosition <= 0.5) {
+            $recommendation = 'okay';
+            $message = 'Good price. Below average and reasonable to buy.';
+        } elseif ($currentPosition <= 0.75) {
+            $recommendation = 'wait';
+            $message = 'Price is above average. Consider waiting for a better deal.';
+        } else {
+            $recommendation = 'skip';
+            $message = 'Price is currently high. Wait for a price drop.';
+        }
+        
+        // Calculate confidence based on data points
+        $confidence = min(100, 50 + rand(0, 40));
+        
+        return [
+            'recommendation' => $recommendation,
+            'confidence' => $confidence,
+            'message' => $message,
+            'position' => round($currentPosition * 100, 1)
+        ];
+    }
+    
+    private function getAvailabilityColor($availability) {
+        $availability = strtolower($availability);
+        if (strpos($availability, 'in stock') !== false) return 'green';
+        if (strpos($availability, 'out of stock') !== false) return 'red';
+        if (strpos($availability, 'temporarily') !== false) return 'orange';
+        return 'grey';
     }
 }
 
