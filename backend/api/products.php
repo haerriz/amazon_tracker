@@ -165,9 +165,13 @@ class ProductAPI {
         $stmt->execute([$asin, $market, $days]);
         $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Convert price to float
+        // Convert price to float and ensure proper date format
         foreach ($history as &$item) {
             $item['price'] = floatval($item['price']);
+            // Ensure timestamp is in proper format
+            if (isset($item['ts'])) {
+                $item['ts'] = date('Y-m-d H:i:s', strtotime($item['ts']));
+            }
         }
 
         echo json_encode(array_values($history));

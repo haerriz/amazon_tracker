@@ -38,17 +38,24 @@ class AmazonScraper {
             CURLOPT_USERAGENT => $this->userAgents[array_rand($this->userAgents)],
             CURLOPT_TIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_COOKIEJAR => '/tmp/cookies.txt',
+            CURLOPT_COOKIEFILE => '/tmp/cookies.txt',
             CURLOPT_HTTPHEADER => [
                 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language: en-US,en;q=0.5',
                 'Accept-Encoding: gzip, deflate',
-                'Connection: keep-alive'
+                'Connection: keep-alive',
+                'Cache-Control: no-cache',
+                'Pragma: no-cache'
             ]
         ]);
         
         $html = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+        
+        // Log for debugging
+        error_log("Scraping $url - HTTP: $httpCode - Length: " . strlen($html));
         
         return ($httpCode === 200) ? $html : null;
     }

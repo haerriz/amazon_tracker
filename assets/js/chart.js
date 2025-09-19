@@ -107,7 +107,10 @@ function drawChart(productId, series, market) {
   for (let i = 0; i < xTicks; i++) {
     const index = Math.floor((i / (xTicks - 1)) * (n - 1));
     const xPos = x(index);
-    const date = new Date(series[index].ts);
+    const dateStr = series[index].ts;
+    const date = new Date(dateStr);
+    
+    console.log('Date processing:', dateStr, '→', date); // Debug log
     
     // Grid line
     const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -197,6 +200,11 @@ function formatPrice(price, currency) {
 }
 
 function formatDate(date, days) {
+  // Check if date is valid
+  if (!date || isNaN(date.getTime())) {
+    return 'Invalid Date';
+  }
+  
   if (days <= 7) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } else if (days <= 90) {
