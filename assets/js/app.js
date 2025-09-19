@@ -70,15 +70,18 @@ $(document).on('click', '.range', function() {
   const productId = $(this).data('id');
   const days = Number($(this).data('days'));
   
+  // Ensure productId is a string
+  const productIdStr = String(productId);
+  
   // Store the selected time range for this product
-  productTimeRanges[productId] = days;
+  productTimeRanges[productIdStr] = days;
   
   // Update active state for this product's chips
   $(`.range[data-id="${productId}"]`).removeClass('active');
   $(this).addClass('active');
   
   // Extract ASIN and market from productId
-  const parts = productId.split('-');
+  const parts = productIdStr.split('-');
   const market = parts.pop();
   const asin = parts.join('-');
   
