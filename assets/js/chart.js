@@ -5,8 +5,18 @@ async function loadChart(asin, market, days = 30) {
     const response = await fetch(API.productHistory(asin, market, days));
     const history = await response.json();
     
-    if (history.length > 0) {
+    console.log('Chart data:', history); // Debug log
+    
+    if (history && history.length > 0) {
       drawChart(asin + '-' + market, history, market);
+    } else {
+      console.log('No chart data available');
+      // Show message in chart area
+      const productId = asin + '-' + market;
+      const $svg = $(`.chart-svg[data-id="${productId}"]`);
+      if ($svg.length) {
+        $svg.html('<text x="400" y="175" text-anchor="middle" class="axis-text">No price history available</text>');
+      }
     }
   } catch (error) {
     console.log('Error loading chart:', error);
@@ -88,7 +98,7 @@ function drawChart(productId, series, market) {
     label.setAttribute('y', yPos + 4);
     label.setAttribute('text-anchor', 'end');
     label.setAttribute('class', 'axis-text');
-    label.textContent = formatPrice(value, product.ccy);
+    label.textContent = formatPrice(value, currencyFor(market));
     $svg[0].appendChild(label);
   }
   
@@ -168,7 +178,7 @@ function drawChart(productId, series, market) {
   $svg[0].appendChild(path);
   
   // Add hover functionality
-  addHoverInteraction($svg[0], series, product, x, y, PAD_LEFT, CHART_W, PAD_TOP, CHART_H);
+  addHoverInteraction($svg[0], series, productId, x, y, PAD_LEFT, CHART_W, PAD_TOP, CHART_H, market);
   
   // Update statistics
   const currentPrice = series[series.length - 1].price;
@@ -196,8 +206,8 @@ function formatDate(date, days) {
   }
 }
 
-function addHoverInteraction(svg, series, product, xFunc, yFunc, padLeft, chartW, padTop, chartH) {
-  const tooltip = $(`#tooltip-${product.id}`);
+function addHoverInteraction(svg, series, productId, xFunc, yFunc, padLeft, chartW, padTop, chartH, market) {
+  const tooltip = $(`#tooltip-${productId}`);
   let hoverLine, hoverDot;
   
   // Create hover elements
@@ -256,7 +266,7 @@ function addHoverInteraction(svg, series, product, xFunc, yFunc, padLeft, chartW
       day: 'numeric',
       year: 'numeric'
     });
-    const formattedPrice = money(dataPoint.price, product.ccy);
+    const formattedPrice = money(dataPoint.price, currencyFor(market));
     
     tooltip.html(`<div><strong>${formattedPrice}</strong></div><div>${formattedDate}</div>`);
     tooltip.css({

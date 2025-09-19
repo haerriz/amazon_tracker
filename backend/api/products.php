@@ -156,7 +156,7 @@ class ProductAPI {
         $days = $_GET['days'] ?? 30;
 
         $stmt = $this->db->prepare("
-            SELECT ph.price, ph.timestamp 
+            SELECT ph.price, ph.timestamp as ts
             FROM price_history ph 
             JOIN products p ON ph.product_id = p.id 
             WHERE p.asin = ? AND p.market = ? AND ph.timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
@@ -164,8 +164,13 @@ class ProductAPI {
         ");
         $stmt->execute([$asin, $market, $days]);
         $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Convert price to float
+        foreach ($history as &$item) {
+            $item['price'] = floatval($item['price']);
+        }
 
-        echo json_encode($history);
+        echo json_encode(array_values($history));
     }
 
     private function setAlert($asin) {
