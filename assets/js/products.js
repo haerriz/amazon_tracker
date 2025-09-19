@@ -16,14 +16,14 @@ function cardHtml(product) {
               <img class="product-img" src="${imageUrl}" alt="${product.title || 'Product'}" 
                    onerror="this.src='https://via.placeholder.com/300x300/e0e0e0/757575?text=No+Image'">
               <div style="margin-top:10px">
-                <span style="font-weight:700;font-size:1.3rem">${product.current_price ? money(product.current_price, currencyFor(product.market)) : 'Price unavailable'}</span>
+                <span style="font-weight:700;font-size:1.3rem">${product.current_price && product.current_price > 0 ? money(product.current_price, currencyFor(product.market)) : 'Price not available'}</span>
                 <div class="subtle">ASIN: ${product.asin} • ${product.market}</div>
               </div>
             </div>
             <div class="col s12 m9">
               <div class="row">
                 <div class="col s12 m8">
-                  <span class="card-title">${product.title || 'Loading product...'}</span>
+                  <span class="card-title">${product.title && product.title !== 'null' ? product.title : `Amazon Product ${product.asin}`}</span>
                   <div class="chart-container">
                     <div class="range-chips">
                       <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${productId}" data-days="7">7d</a>

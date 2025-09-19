@@ -83,10 +83,13 @@ class ProductAPI {
 
         // Fetch product data
         $productData = $this->scraper->fetchProductData($asin, $market);
-        if (!$productData) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to fetch product data']);
-            return;
+        if (!$productData || !$productData['title']) {
+            // Fallback with basic product info
+            $productData = [
+                'title' => "Amazon Product {$asin}",
+                'price' => null,
+                'image' => "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg"
+            ];
         }
 
         // Generate affiliate URL
@@ -119,7 +122,7 @@ class ProductAPI {
                 'market' => $market,
                 'title' => $productData['title'],
                 'image' => $productData['image'],
-                'price' => $productData['price'],
+                'price' => $productData['price'] ?? null,
                 'url' => $affiliateUrl
             ]
         ]);
