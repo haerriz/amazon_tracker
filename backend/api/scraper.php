@@ -129,14 +129,24 @@ class AmazonScraper {
     }
 
     private function extractPrice($html, $market) {
+        // Log HTML snippet for debugging
+        error_log("Price extraction for market: $market");
+        
         $patterns = [
+            // 2024 Amazon price patterns - most specific first
             '/<span[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([\d,]+)<\/span><span[^>]*class="[^"]*a-price-fraction[^"]*"[^>]*>([\d]+)<\/span>/',
-            '/<span[^>]*class="[^"]*a-offscreen[^"]*"[^>]*>([^<]+)<\/span>/',
-            '/<span[^>]*id="priceblock_dealprice"[^>]*>([^<]+)<\/span>/',
-            '/<span[^>]*id="priceblock_ourprice"[^>]*>([^<]+)<\/span>/',
-            '/<span[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([^<]+)<\/span>/',
-            '/<span[^>]*data-a-size="xl"[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([^<]+)<\/span>/',
+            '/<span[^>]*class="[^"]*a-offscreen[^"]*"[^>]*>\s*₹?\s*([\d,]+(?:\.\d{2})?)[^<]*<\/span>/',
+            '/<span[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([\d,]+)<\/span>/',
+            
+            // Deal prices
+            '/<span[^>]*id="priceblock_dealprice"[^>]*>\s*₹?\s*([\d,]+(?:\.\d{2})?)[^<]*<\/span>/',
+            '/<span[^>]*id="priceblock_ourprice"[^>]*>\s*₹?\s*([\d,]+(?:\.\d{2})?)[^<]*<\/span>/',
+            
+            // JSON data
             '/"priceAmount":\s*([\d.]+)/',
+            '/"price":\s*"?([\d,]+(?:\.\d{2})?)"?/',
+            
+            // Text-based patterns (more flexible)
             '/₹\s*([\d,]+(?:\.\d{2})?)/i',
             '/INR\s*([\d,]+(?:\.\d{2})?)/i',
             '/Rs\.?\s*([\d,]+(?:\.\d{2})?)/i',
@@ -144,21 +154,27 @@ class AmazonScraper {
             '/£\s*([\d,]+(?:\.\d{2})?)/i'
         ];
 
-        foreach ($patterns as $pattern) {
+        foreach ($patterns as $i => $pattern) {
             if (preg_match($pattern, $html, $matches)) {
                 if (isset($matches[2])) {
                     $price = $matches[1] . '.' . $matches[2];
                 } else {
                     $price = $matches[1];
                 }
+                
+                // Clean and validate price
                 $price = preg_replace('/[^\d.,]/', '', $price);
                 $price = str_replace(',', '', $price);
                 $price = floatval($price);
-                if ($price > 0) {
+                
+                if ($price > 0 && $price < 10000000) { // Reasonable range
+                    error_log("Price found using pattern $i: $price");
                     return $price;
                 }
             }
         }
+        
+        error_log("No price found in HTML");
         return null;
     }
     
