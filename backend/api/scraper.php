@@ -54,30 +54,51 @@ class AmazonScraper {
     }
 
     private function extractTitle($html) {
-        if (preg_match('/<span[^>]*id="productTitle"[^>]*>([^<]+)<\/span>/i', $html, $matches)) {
-            return trim($matches[1]);
-        }
-        if (preg_match('/<title>([^<]+)<\/title>/i', $html, $matches)) {
-            $title = trim($matches[1]);
-            return preg_replace('/\s*-\s*Amazon\.(com|in|co\.uk).*$/i', '', $title);
+        // Multiple patterns for title extraction
+        $patterns = [
+            '/<span[^>]*id="productTitle"[^>]*>\s*([^<]+?)\s*<\/span>/i',
+            '/<h1[^>]*class="[^"]*product[^"]*title[^"]*"[^>]*>\s*([^<]+?)\s*<\/h1>/i',
+            '/<title>\s*([^<]+?)\s*<\/title>/i'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $html, $matches)) {
+                $title = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
+                // Clean up Amazon suffixes
+                $title = preg_replace('/\s*[-:]\s*Amazon\.(com|in|co\.uk).*$/i', '', $title);
+                $title = preg_replace('/\s*[-:]\s*Buy.*$/i', '', $title);
+                if (strlen($title) > 10) { // Ensure we have a meaningful title
+                    return $title;
+                }
+            }
         }
         return null;
     }
 
     private function extractPrice($html, $market) {
         $patterns = [
+            // Current Amazon price patterns
             '/<span[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([^<]+)<\/span>/',
             '/<span[^>]*class="[^"]*a-offscreen[^"]*"[^>]*>([^<]+)<\/span>/',
             '/<span[^>]*id="priceblock_dealprice"[^>]*>([^<]+)<\/span>/',
-            '/<span[^>]*id="priceblock_ourprice"[^>]*>([^<]+)<\/span>/'
+            '/<span[^>]*id="priceblock_ourprice"[^>]*>([^<]+)<\/span>/',
+            '/<span[^>]*class="[^"]*a-price[^"]*"[^>]*>[^<]*<span[^>]*>([^<]+)<\/span>/',
+            // Backup patterns
+            '/₹\s*([\d,]+(?:\.\d{2})?)/i',
+            '/INR\s*([\d,]+(?:\.\d{2})?)/i',
+            '/Rs\.?\s*([\d,]+(?:\.\d{2})?)/i'
         ];
 
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $html, $matches)) {
                 $price = $matches[1];
+                // Clean price string
                 $price = preg_replace('/[^\d.,]/', '', $price);
                 $price = str_replace(',', '', $price);
-                return floatval($price);
+                $price = floatval($price);
+                if ($price > 0) {
+                    return $price;
+                }
             }
         }
         return null;
