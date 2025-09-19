@@ -3,8 +3,7 @@ function getBaseUrl() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
   
-  // console.log('Current hostname:', hostname);
-  // console.log('Is local:', isLocal);
+
   
   return isLocal ? '/tracker' : '';
 }

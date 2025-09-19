@@ -4,7 +4,8 @@
 
 function cardHtml(product) {
   const imageUrl = getProductImage(product.asin, product.market);
-  const selectedRange = productTimeRanges[product.id] || 30;
+  const productId = `${product.asin}-${product.market}`;
+  const selectedRange = productTimeRanges[productId] || 30;
   
   return `
     <div class="col s12 product-card">
@@ -12,30 +13,30 @@ function cardHtml(product) {
         <div class="card-content">
           <div class="row" style="margin-bottom:0">
             <div class="col s12 m3">
-              <img class="product-img" src="${imageUrl}" alt="${product.title}" 
+              <img class="product-img" src="${imageUrl}" alt="${product.title || 'Product'}" 
                    onerror="this.src='https://via.placeholder.com/300x300/e0e0e0/757575?text=No+Image'">
               <div style="margin-top:10px">
-                <span style="font-weight:700;font-size:1.3rem">${product.current_price ? money(product.current_price, currencyFor(product.market)) : 'Loading...'}</span>
+                <span style="font-weight:700;font-size:1.3rem">${product.current_price ? money(product.current_price, currencyFor(product.market)) : 'Price unavailable'}</span>
                 <div class="subtle">ASIN: ${product.asin} • ${product.market}</div>
               </div>
             </div>
             <div class="col s12 m9">
               <div class="row">
                 <div class="col s12 m8">
-                  <span class="card-title">${product.title}</span>
+                  <span class="card-title">${product.title || 'Loading product...'}</span>
                   <div class="chart-container">
                     <div class="range-chips">
-                      <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${product.id}" data-days="7">7d</a>
-                      <a class="chip range ${selectedRange === 30 ? 'active' : ''}" data-id="${product.id}" data-days="30">30d</a>
-                      <a class="chip range ${selectedRange === 90 ? 'active' : ''}" data-id="${product.id}" data-days="90">90d</a>
-                      <a class="chip range ${selectedRange === 365 ? 'active' : ''}" data-id="${product.id}" data-days="365">1y</a>
-                      <a class="chip range ${selectedRange === 0 ? 'active' : ''}" data-id="${product.id}" data-days="0">All</a>
+                      <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${productId}" data-days="7">7d</a>
+                      <a class="chip range ${selectedRange === 30 ? 'active' : ''}" data-id="${productId}" data-days="30">30d</a>
+                      <a class="chip range ${selectedRange === 90 ? 'active' : ''}" data-id="${productId}" data-days="90">90d</a>
+                      <a class="chip range ${selectedRange === 365 ? 'active' : ''}" data-id="${productId}" data-days="365">1y</a>
+                      <a class="chip range ${selectedRange === 0 ? 'active' : ''}" data-id="${productId}" data-days="0">All</a>
                     </div>
                     <div class="svg-wrap" style="position: relative;">
-                      <svg class="chart-svg" data-id="${product.id}" width="100%" height="100%" viewBox="0 0 800 350" preserveAspectRatio="none"></svg>
-                      <div class="chart-tooltip" id="tooltip-${product.id}"></div>
+                      <svg class="chart-svg" data-id="${productId}" width="100%" height="100%" viewBox="0 0 800 350" preserveAspectRatio="none"></svg>
+                      <div class="chart-tooltip" id="tooltip-${productId}"></div>
                     </div>
-                    <div class="stats" data-id="${product.id}">
+                    <div class="stats" data-id="${productId}">
                       <span class="stat">Min: <b class="st-min">—</b></span>
                       <span class="stat">Max: <b class="st-max">—</b></span>
                       <span class="stat">Change: <b class="st-chg">—</b></span>
@@ -45,13 +46,13 @@ function cardHtml(product) {
                 <div class="col s12 m4">
                   <div class="row" style="margin-bottom:0">
                     <div class="input-field col s12">
-                      <input class="target-input" data-id="${product.id}" type="number" step="0.01" 
-                             value="${product.target ?? ''}" placeholder="Target price">
+                      <input class="target-input" data-id="${productId}" type="number" step="0.01" 
+                             value="${product.target_price ?? ''}" placeholder="Target price">
                       <label class="active subtle">Target price</label>
                     </div>
                     <div class="col s12">
-                      <a class="btn btn-outline set-target waves-effect" data-id="${product.id}" style="width:100%;margin-bottom:8px">Set Alert</a>
-                      <a class="btn red darken-2 remove-btn waves-effect" data-id="${product.id}" style="width:100%;margin-bottom:8px">Remove</a>
+                      <a class="btn btn-outline set-target waves-effect" data-id="${productId}" style="width:100%;margin-bottom:8px">Set Alert</a>
+                      <a class="btn red darken-2 remove-btn waves-effect" data-id="${productId}" style="width:100%;margin-bottom:8px">Remove</a>
                       <a class="btn btn-green waves-effect" href="${product.url}" target="_blank" style="width:100%">
                         <i class="material-icons left">shopping_cart</i>Buy
                       </a>
@@ -86,7 +87,8 @@ async function loadProducts() {
     $('#empty').hide();
     products.forEach(product => {
       $cards.append(cardHtml(product));
-      const timeRange = productTimeRanges[product.id] || 30;
+      const productId = `${product.asin}-${product.market}`;
+      const timeRange = productTimeRanges[productId] || 30;
       setTimeout(() => loadChart(product.asin, product.market, timeRange), 100);
     });
   } catch (error) {
