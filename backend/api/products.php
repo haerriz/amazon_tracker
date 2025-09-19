@@ -89,14 +89,18 @@ class ProductAPI {
             return;
         }
 
+        // Generate affiliate URL
+        $affiliateUrl = $this->generateAffiliateUrl($asin, $market);
+        
         // Insert product
-        $stmt = $this->db->prepare("INSERT INTO products (asin, market, title, image_url, current_price) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $this->db->prepare("INSERT INTO products (asin, market, title, image_url, current_price, url) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $asin,
             $market,
             $productData['title'],
             $productData['image'],
-            $productData['price']
+            $productData['price'],
+            $affiliateUrl
         ]);
 
         $productId = $this->db->lastInsertId();
@@ -115,7 +119,8 @@ class ProductAPI {
                 'market' => $market,
                 'title' => $productData['title'],
                 'image' => $productData['image'],
-                'price' => $productData['price']
+                'price' => $productData['price'],
+                'url' => $affiliateUrl
             ]
         ]);
     }
@@ -205,6 +210,25 @@ class ProductAPI {
         $stmt->execute([$asin, $market]);
         
         echo json_encode(['success' => true]);
+    }
+    
+    private function generateAffiliateUrl($asin, $market) {
+        $domains = [
+            'IN' => 'amazon.in',
+            'US' => 'amazon.com',
+            'UK' => 'amazon.co.uk'
+        ];
+        
+        $affiliateTags = [
+            'IN' => AFFILIATE_TAG_IN,
+            'US' => AFFILIATE_TAG_US,
+            'UK' => AFFILIATE_TAG_UK
+        ];
+        
+        $domain = $domains[$market] ?? 'amazon.in';
+        $tag = $affiliateTags[$market] ?? AFFILIATE_TAG_IN;
+        
+        return "https://{$domain}/dp/{$asin}?tag={$tag}";
     }
 }
 

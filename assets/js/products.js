@@ -53,7 +53,7 @@ function cardHtml(product) {
                     <div class="col s12">
                       <a class="btn btn-outline set-target waves-effect" data-id="${productId}" style="width:100%;margin-bottom:8px">Set Alert</a>
                       <a class="btn red darken-2 remove-btn waves-effect" data-id="${productId}" style="width:100%;margin-bottom:8px">Remove</a>
-                      <a class="btn btn-green waves-effect" href="${product.url}" target="_blank" style="width:100%">
+                      <a class="btn btn-green waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" style="width:100%">
                         <i class="material-icons left">shopping_cart</i>Buy
                       </a>
                     </div>

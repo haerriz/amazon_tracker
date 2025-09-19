@@ -20,6 +20,7 @@ try {
         market VARCHAR(2) NOT NULL,
         title VARCHAR(500),
         image_url VARCHAR(500),
+        url VARCHAR(500),
         current_price DECIMAL(10,2),
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
