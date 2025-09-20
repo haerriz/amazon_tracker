@@ -81,10 +81,18 @@ class ProductAPI {
             return;
         }
 
-        // Fetch product data
-        $productData = $this->scraper->fetchProductData($asin, $market);
+        // Use live scraper for real-time data
+        require_once 'live_scraper.php';
+        $liveScraper = new LiveScraper();
+        $productData = $liveScraper->scrapeProduct($asin, $market);
+        
+        // Fallback to enhanced scraper if live scraper fails
+        if (!$productData || !$productData['title'] || !$productData['price']) {
+            $productData = $this->scraper->fetchProductData($asin, $market);
+        }
+        
+        // Final fallback
         if (!$productData || !$productData['title']) {
-            // Generate realistic fallback data
             $productData = $this->generateFallbackData($asin, $market);
         }
 
@@ -97,7 +105,7 @@ class ProductAPI {
             $asin,
             $market,
             $productData['title'],
-            $productData['image'],
+            isset($productData['images'][0]) ? $productData['images'][0] : $productData['image'] ?? null,
             $productData['price'],
             $affiliateUrl
         ]);
@@ -120,7 +128,7 @@ class ProductAPI {
                 'asin' => $asin,
                 'market' => $market,
                 'title' => $productData['title'],
-                'image' => $productData['image'],
+                'image' => isset($productData['images'][0]) ? $productData['images'][0] : $productData['image'] ?? null,
                 'price' => $productData['price'] ?? null,
                 'url' => $affiliateUrl
             ]
