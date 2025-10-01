@@ -28,9 +28,16 @@ try {
     $asin = $input['asin'] ?? '';
     $market = $input['market'] ?? 'IN';
     
+    // Debug: log received data
+    error_log('Received input: ' . json_encode($input));
+    error_log('Extracted ASIN: ' . $asin);
+    
     if (!$asin) {
         http_response_code(400);
-        echo json_encode(['error' => 'ASIN required']);
+        echo json_encode([
+            'error' => 'ASIN required',
+            'debug' => 'Received data: ' . json_encode($input)
+        ]);
         exit;
     }
     

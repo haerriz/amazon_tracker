@@ -8,25 +8,41 @@ const AFFILIATE_TAGS = {
 };
 
 function parseASIN(input) {
+  if (!input) return null;
+  
+  // Clean input
+  input = input.trim();
+  
+  // Direct ASIN check
   const re = /^[A-Z0-9]{10}$/i;
   if (re.test(input)) return input.toUpperCase();
   
   // Extract ASIN from various URL patterns
   const patterns = [
-    /\/dp\/([A-Z0-9]{10})(?:\/|\?|$)/i,
-    /\/product\/([A-Z0-9]{10})(?:\/|\?|$)/i,
-    /\/gp\/product\/([A-Z0-9]{10})(?:\/|\?|$)/i,
+    // Standard Amazon URLs
+    /\/dp\/([A-Z0-9]{10})(?:\/|\?|#|$)/i,
+    /\/product\/([A-Z0-9]{10})(?:\/|\?|#|$)/i,
+    /\/gp\/product\/([A-Z0-9]{10})(?:\/|\?|#|$)/i,
+    
+    // Query parameters
     /[?&]asin=([A-Z0-9]{10})/i,
     /[?&]pd_rd_i=([A-Z0-9]{10})/i,
+    
+    // Amazon domain patterns
     /amazon\.[a-z.]+\/.*\/dp\/([A-Z0-9]{10})/i,
-    /amazon\.[a-z.]+\/([A-Z0-9]{10})(?:\/|\?|$)/i,
+    /amazon\.[a-z.]+\/([A-Z0-9]{10})(?:\/|\?|#|$)/i,
+    
+    // Short URLs
     /amzn\.to\/([A-Z0-9]{10})/i,
-    /a\.co\/([A-Z0-9]{10})/i
+    /a\.co\/([A-Z0-9]{10})/i,
+    
+    // Any 10-character alphanumeric string that looks like ASIN
+    /([A-Z0-9]{10})/i
   ];
   
   for (const pattern of patterns) {
     const match = input.match(pattern);
-    if (match && match[1]) {
+    if (match && match[1] && /^[A-Z0-9]{10}$/i.test(match[1])) {
       return match[1].toUpperCase();
     }
   }

@@ -218,8 +218,12 @@ async function addProduct() {
   const market = $('#market').val();
   const asin = parseASIN(input);
   
+  console.log('Input:', input);
+  console.log('Parsed ASIN:', asin);
+  console.log('Market:', market);
+  
   if (!asin) {
-    M.toast({ html: 'Invalid URL/ASIN' });
+    M.toast({ html: 'Invalid URL/ASIN - Please enter a valid Amazon URL or ASIN' });
     return;
   }
   
