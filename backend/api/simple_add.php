@@ -1,6 +1,10 @@
 <?php
+<?php
 ini_set('display_errors', 0);
 error_reporting(0);
+
+// Clean output buffer
+ob_clean();
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -15,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     require_once '../config/database.php';
+    require_once 'amazon_api_scraper.php';
     
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
@@ -25,40 +30,29 @@ try {
         exit;
     }
     
-    $asin = $input['asin'] ?? '';
+    $asin = trim($input['asin'] ?? '');
     $market = $input['market'] ?? 'IN';
-    
-    // If no ASIN, try to extract from URL if provided
-    if (!$asin && isset($input['url'])) {
-        $asin = extractASINFromURL($input['url']);
-    }
     
     if (!$asin) {
         http_response_code(400);
-        echo json_encode([
-            'error' => 'ASIN required. Please provide a valid Amazon ASIN or URL.',
-            'received' => $input
-        ]);
+        echo json_encode(['error' => 'ASIN required']);
         exit;
     }
     
     // Validate ASIN format
     if (!preg_match('/^[A-Z0-9]{10}$/i', $asin)) {
         http_response_code(400);
-        echo json_encode([
-            'error' => 'Invalid ASIN format. ASIN must be 10 alphanumeric characters.',
-            'received_asin' => $asin
-        ]);
+        echo json_encode(['error' => 'Invalid ASIN format']);
         exit;
     }
     
     $database = new Database();
     $db = $database->getConnection();
     
-    // Skip duplicate check for now - focus on scraping availability
+    $database = new Database();
+    $db = $database->getConnection();
     
     // Try to scrape real data
-    require_once 'amazon_api_scraper.php';
     $scraper = new AmazonAPIScraper();
     $productData = $scraper->scrapeProduct($asin, $market);
     
@@ -105,28 +99,5 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Server error occurred']);
-}
-
-function extractASINFromURL($url) {
-    if (!$url) return null;
-    
-    $patterns = [
-        '/\/dp\/([A-Z0-9]{10})(?:\/|\?|#|$)/i',
-        '/\/product\/([A-Z0-9]{10})(?:\/|\?|#|$)/i',
-        '/\/gp\/product\/([A-Z0-9]{10})(?:\/|\?|#|$)/i',
-        '/[?&]asin=([A-Z0-9]{10})/i',
-        '/amazon\.[a-z.]+\/.*\/dp\/([A-Z0-9]{10})/i',
-        '/([A-Z0-9]{10})/i'
-    ];
-    
-    foreach ($patterns as $pattern) {
-        if (preg_match($pattern, $url, $matches)) {
-            if (preg_match('/^[A-Z0-9]{10}$/i', $matches[1])) {
-                return strtoupper($matches[1]);
-            }
-        }
-    }
-    
-    return null;
 }
 ?>
