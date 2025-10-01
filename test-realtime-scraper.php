@@ -167,7 +167,7 @@
                 
                 const startTime = Date.now();
                 
-                $.get('/backend/api/realtime_scraper.php', {
+                $.get('/backend/api/simple_scraper.php', {
                     asin: asin,
                     market: market
                 })

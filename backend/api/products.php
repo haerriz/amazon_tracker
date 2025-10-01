@@ -81,21 +81,16 @@ class ProductAPI {
             return;
         }
 
-        // Use real-time scraper for most current data
-        require_once 'realtime_scraper.php';
-        $realtimeScraper = new RealtimeScraper();
-        $productData = $realtimeScraper->scrapeProduct($asin, $market);
+        // Use simple scraper for reliable data
+        require_once 'simple_scraper.php';
+        $simpleScraper = new SimpleScraper();
+        $productData = $simpleScraper->scrapeProduct($asin, $market);
         
-        // Fallback to live scraper if real-time fails
-        if (!$productData || !$productData['title'] || !$productData['price']) {
-            require_once 'live_scraper.php';
-            $liveScraper = new LiveScraper();
-            $productData = $liveScraper->scrapeProduct($asin, $market);
-        }
-        
-        // Fallback to enhanced scraper
-        if (!$productData || !$productData['title'] || !$productData['price']) {
-            $productData = $this->scraper->fetchProductData($asin, $market);
+        // Try real-time scraper as backup
+        if (!$productData || !$productData['title']) {
+            require_once 'realtime_scraper.php';
+            $realtimeScraper = new RealtimeScraper();
+            $productData = $realtimeScraper->scrapeProduct($asin, $market);
         }
         
         // Final fallback
