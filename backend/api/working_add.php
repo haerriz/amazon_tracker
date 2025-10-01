@@ -151,14 +151,12 @@ try {
         $stmt->execute([$productId, $price]);
         
         // Generate sample price history for chart
+        $historyStmt = $db->prepare("INSERT INTO price_history (product_id, price, timestamp) VALUES (?, ?, ?)");
         for ($i = 30; $i > 0; $i--) {
             $date = date('Y-m-d H:i:s', strtotime("-{$i} days"));
             $variation = (rand(-20, 20) / 100);
             $historicalPrice = $price * (1 + $variation);
-            $stmt->execute([$productId, round($historicalPrice, 2)]);
-            $stmt = $db->prepare("UPDATE price_history SET timestamp = ? WHERE product_id = ? AND price = ? ORDER BY id DESC LIMIT 1");
-            $stmt->execute([$date, $productId, round($historicalPrice, 2)]);
-            $stmt = $db->prepare("INSERT INTO price_history (product_id, price) VALUES (?, ?)");
+            $historyStmt->execute([$productId, round($historicalPrice, 2), $date]);
         }
         
         echo json_encode([
