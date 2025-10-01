@@ -127,7 +127,7 @@ function drawChart(productId, series, market, days = 30) {
   for (let i = 0; i < xTicks; i++) {
     const index = Math.floor((i / (xTicks - 1)) * (n - 1));
     const xPos = x(index);
-    const dateStr = series[index].ts;
+    const dateStr = series[index].ts || series[index].timestamp;
     const date = new Date(dateStr);
     
     console.log('Date processing:', dateStr, '→', date); // Debug log
@@ -364,7 +364,7 @@ function addHoverInteraction(svg, series, productId, xFunc, yFunc, padLeft, char
     hoverDot.style.display = 'block';
     
     // Update tooltip with enhanced information
-    const date = new Date(dataPoint.ts);
+    const date = new Date(dataPoint.ts || dataPoint.timestamp);
     const formattedDate = date.toLocaleDateString('en-IN', { 
       day: 'numeric',
       month: 'long',
