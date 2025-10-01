@@ -1,0 +1,123 @@
+/* SEO and Performance Optimizations */
+
+/* Critical CSS for above-the-fold content */
+.hero-section {
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #26a69a 0%, #00695c 100%);
+  color: white;
+  margin: -18px -15px 2rem -15px;
+  text-align: center;
+}
+
+.hero-section h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-weight: 300;
+}
+
+.hero-section .flow-text {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* FAQ Section Styling */
+.faq-section {
+  margin-top: 2rem;
+}
+
+.faq-section h4 {
+  color: #26a69a;
+  font-size: 1.3rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.faq-section p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Features Section */
+.features-section {
+  margin: 3rem 0;
+}
+
+.features-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #424242;
+}
+
+.features-section .material-icons.large {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* SEO Content Styling */
+.seo-content h2, .seo-content h3, .seo-content h4 {
+  color: #26a69a;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.seo-content ul.browser-default li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+/* Comparison Table Styling */
+.comparison-table {
+  margin: 2rem 0;
+}
+
+.comparison-table h4 {
+  background: #f5f5f5;
+  padding: 1rem;
+  margin: 0 0 1rem 0;
+  border-radius: 4px;
+}
+
+.comparison-table ul li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+/* Mobile Optimizations */
+@media only screen and (max-width: 600px) {
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-section .flow-text {
+    font-size: 1rem;
+  }
+  
+  .features-section .material-icons.large {
+    font-size: 2.5rem;
+  }
+}
+
+/* Performance: Reduce layout shift */
+.card {
+  min-height: 200px;
+}
+
+.search-block .card-content {
+  min-height: 150px;
+}
+
+/* Accessibility improvements */
+.btn:focus, .btn-large:focus {
+  outline: 2px solid #26a69a;
+  outline-offset: 2px;
+}
+
+/* Print styles for SEO */
+@media print {
+  .hero-section, .features-section, .seo-content {
+    color: black !important;
+    background: white !important;
+  }
+}
