@@ -37,14 +37,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
     
-    // Check if product exists
-    $stmt = $db->prepare("SELECT id FROM products WHERE asin = ? AND market = ?");
-    $stmt->execute([$asin, $market]);
-    if ($stmt->fetch()) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Product already exists']);
-        exit;
-    }
+    // Skip duplicate check for now - focus on scraping availability
     
     // For now, return error since we only want real data
     http_response_code(400);

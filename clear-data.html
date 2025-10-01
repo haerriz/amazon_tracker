@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Database</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; }
+        .btn { padding: 10px 20px; background: #f44336; color: white; border: none; cursor: pointer; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 4px; }
+        .success { background: #c8e6c9; }
+        .error { background: #ffcdd2; }
+    </style>
+</head>
+<body>
+    <h1>Clear Database</h1>
+    <p>This will remove all products and start fresh.</p>
+    <button class="btn" onclick="clearData()">Clear All Products</button>
+    <div id="result"></div>
+
+    <script>
+        async function clearData() {
+            try {
+                const response = await fetch('/backend/api/clear_products.php');
+                const result = await response.json();
+                
+                const resultDiv = document.getElementById('result');
+                if (result.success) {
+                    resultDiv.innerHTML = '<div class="result success">✓ ' + result.message + '</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="result error">✗ ' + result.error + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<div class="result error">✗ Error: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>
