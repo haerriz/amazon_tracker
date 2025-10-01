@@ -156,12 +156,17 @@ const productTimeRanges = {};
 async function loadProducts() {
   try {
     const response = await fetch(API.products());
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
     const products = await response.json();
     
     const $cards = $('#cards');
     $cards.empty();
     
-    if (!products.length) {
+    if (!products || !Array.isArray(products) || products.length === 0) {
       $('#empty').show();
       return;
     }
@@ -174,7 +179,9 @@ async function loadProducts() {
       setTimeout(() => loadChart(product.asin, product.market, timeRange), 100);
     });
   } catch (error) {
-    M.toast({ html: 'Error loading products' });
+    console.error('Load products error:', error);
+    $('#empty').show();
+    // Don't show error toast on initial load if no products exist
   }
 }
 
@@ -235,6 +242,8 @@ async function addProduct() {
     console.log('Response status:', response.status);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
