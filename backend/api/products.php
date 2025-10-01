@@ -33,7 +33,10 @@ class ProductAPI {
 
         switch ($method) {
             case 'POST':
-                if (end($segments) === 'add') {
+                if (end($segments) === 'add' || strpos($path, '/add') !== false) {
+                    $this->addProduct();
+                } else {
+                    // Handle POST to main products endpoint as add product
                     $this->addProduct();
                 }
                 break;
@@ -63,13 +66,25 @@ class ProductAPI {
     }
 
     private function addProduct() {
-        $input = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        error_log('Raw input: ' . $rawInput);
+        
+        $input = json_decode($rawInput, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid JSON: ' . json_last_error_msg()]);
+            return;
+        }
+        
         $asin = $input['asin'] ?? '';
         $market = $input['market'] ?? 'IN';
+        
+        error_log('Parsed ASIN: ' . $asin . ', Market: ' . $market);
 
         if (!$asin) {
             http_response_code(400);
-            echo json_encode(['error' => 'ASIN required']);
+            echo json_encode(['error' => 'ASIN required', 'received_data' => $input]);
             return;
         }
 

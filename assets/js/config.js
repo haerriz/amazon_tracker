@@ -14,7 +14,7 @@ function getBaseUrl() {
 // API endpoints
 const API = {
   products: () => `${getBaseUrl()}/backend/api/products.php`,
-  addProduct: () => `${getBaseUrl()}/backend/api/products.php/add`,
+  addProduct: () => `${getBaseUrl()}/backend/api/add_product.php`,
   productHistory: (asin, market, days) => `${getBaseUrl()}/backend/api/products.php/${asin}/history?market=${market}&days=${days}`,
   setAlert: (asin) => `${getBaseUrl()}/backend/api/products.php/${asin}/alert`,
   deleteProduct: (asin, market) => `${getBaseUrl()}/backend/api/products.php/${asin}?market=${market}`
