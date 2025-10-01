@@ -49,6 +49,24 @@ function drawChart(productId, series, market, days = 30) {
   
   if (!$svg.length || !series.length) return;
   
+  // Validate data points
+  const validSeries = series.filter(point => 
+    point && 
+    typeof point.price === 'number' && 
+    !isNaN(point.price) && 
+    (point.ts || point.timestamp)
+  );
+  
+  if (validSeries.length === 0) {
+    $svg.html(`
+      <rect width="800" height="350" fill="#f8f9fa" rx="8"/>
+      <text x="400" y="175" text-anchor="middle" class="axis-text">No valid price data available</text>
+    `);
+    return;
+  }
+  
+  series = validSeries;
+  
   $svg.empty();
   
   const W = 800, H = 350, PAD_LEFT = 60, PAD_RIGHT = 20, PAD_TOP = 20, PAD_BOTTOM = 40;
@@ -66,6 +84,7 @@ function drawChart(productId, series, market, days = 30) {
   const n = series.length;
   
   function x(i) {
+    if (n <= 1) return PAD_LEFT + CHART_W / 2;
     return PAD_LEFT + (i / (n - 1)) * CHART_W;
   }
   
@@ -125,7 +144,12 @@ function drawChart(productId, series, market, days = 30) {
   // Draw X-axis grid lines and labels
   const xTicks = Math.min(6, n);
   for (let i = 0; i < xTicks; i++) {
-    const index = Math.floor((i / (xTicks - 1)) * (n - 1));
+    let index;
+    if (n === 1) {
+      index = 0;
+    } else {
+      index = Math.floor((i / (xTicks - 1)) * (n - 1));
+    }
     if (index >= series.length) continue;
     const xPos = x(index);
     const dataPoint = series[index];
@@ -348,7 +372,12 @@ function addHoverInteraction(svg, series, productId, xFunc, yFunc, padLeft, char
     
     // Find closest data point
     const relativeX = (mouseX - padLeft) / chartW;
-    const dataIndex = Math.round(relativeX * (series.length - 1));
+    let dataIndex;
+    if (series.length === 1) {
+      dataIndex = 0;
+    } else {
+      dataIndex = Math.round(relativeX * (series.length - 1));
+    }
     const dataPoint = series[Math.max(0, Math.min(dataIndex, series.length - 1))];
     
     if (!dataPoint) return;
