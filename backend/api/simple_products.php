@@ -7,6 +7,7 @@ header('Access-Control-Allow-Origin: *');
 
 try {
     require_once '../config/database.php';
+    require_once '../config/affiliate.php';
     
     $database = new Database();
     $db = $database->getConnection();
@@ -16,10 +17,15 @@ try {
     $stmt->execute();
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Convert to proper format
+    // Convert to proper format and add affiliate URLs
     foreach ($products as &$product) {
         $product['current_price'] = floatval($product['current_price']);
         $product['target_price'] = null; // No alerts for now
+        
+        // Generate affiliate URL if not already set
+        if (!$product['url'] || strpos($product['url'], 'tag=') === false) {
+            $product['url'] = generateAffiliateUrl($product['asin'], $product['market'] ?? 'IN');
+        }
     }
     
     echo json_encode($products);

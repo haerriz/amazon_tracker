@@ -105,10 +105,12 @@ try {
         $database = new Database();
         $db = $database->getConnection();
         
-        // Insert product with image
+        // Generate affiliate URL for commission
+        $affiliateUrl = "https://amazon.in/dp/{$asin}?tag=haerriz06-21";
         $imageUrl = "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg";
+        
         $stmt = $db->prepare("INSERT INTO products (asin, market, title, image_url, current_price, url) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$asin, $market, $title, $imageUrl, $price, $url]);
+        $stmt->execute([$asin, $market, $title, $imageUrl, $price, $affiliateUrl]);
         
         $productId = $db->lastInsertId();
         
@@ -125,7 +127,7 @@ try {
                 'title' => $title,
                 'price' => $price,
                 'image' => $imageUrl,
-                'url' => $url
+                'url' => $affiliateUrl
             ]
         ]);
     } else {

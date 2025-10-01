@@ -49,9 +49,10 @@ function cardHtml(product) {
               </div>
               
               <!-- Buy Button -->
-              <a class="btn btn-green waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" style="width:100%;margin-bottom:12px">
+              <a class="btn btn-green waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" rel="nofollow" style="width:100%;margin-bottom:12px">
                 <i class="material-icons left">shopping_cart</i>Buy @ Amazon
               </a>
+              <small class="grey-text" style="font-size:10px;">Affiliate Link - We earn from qualifying purchases</small>
             </div>
           </div>
           
@@ -202,9 +203,9 @@ function getAffiliateUrl(asin, market) {
   };
   
   const affiliateTags = {
-    'IN': 'yourtagin-21',
-    'US': 'yourtag-20',
-    'UK': 'yourtaguk-21'
+    'IN': 'haerriz06-21',
+    'US': 'haerriz06-20',
+    'UK': 'haerriz06-21'
   };
   
   const domain = domains[market] || 'amazon.in';
