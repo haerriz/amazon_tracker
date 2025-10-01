@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://amazon-tracker.haerriz.com/sitemap.xml
+
+# Allow crawling of main pages
+Allow: /index.html
+Allow: /assets/
+Allow: /backend/api/
+
+# Disallow sensitive areas
+Disallow: /backend/config/
+Disallow: /backend/scripts/
+Disallow: *.log
+Disallow: /tmp/
+
+# Crawl delay
+Crawl-delay: 1
