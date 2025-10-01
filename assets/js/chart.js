@@ -126,8 +126,12 @@ function drawChart(productId, series, market, days = 30) {
   const xTicks = Math.min(6, n);
   for (let i = 0; i < xTicks; i++) {
     const index = Math.floor((i / (xTicks - 1)) * (n - 1));
+    if (index >= series.length) continue;
     const xPos = x(index);
-    const dateStr = series[index].ts || series[index].timestamp;
+    const dataPoint = series[index];
+    if (!dataPoint) continue;
+    const dateStr = dataPoint.ts || dataPoint.timestamp;
+    if (!dateStr) continue;
     const date = new Date(dateStr);
     
     console.log('Date processing:', dateStr, '→', date); // Debug log
