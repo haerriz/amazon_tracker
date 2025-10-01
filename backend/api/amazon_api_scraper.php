@@ -224,6 +224,71 @@ class AmazonAPIScraper {
             $availability = trim(strip_tags($matches[1]));
             if (stripos($availability, 'in stock') !== false) return 'In Stock';
             if (stripos($availability, 'out of stock') !== false) return 'Out of Stock';
+            return $availability;
+        }
+        return 'In Stock';
+    }
+    
+    private function extractBrand($html) {
+        $patterns = [
+            '/by\s+<a[^>]*>([^<]+)<\/a>/i',
+            '/<span[^>]*class="[^"]*po-break-word[^"]*"[^>]*>([^<]+)<\/span>/i',
+            '/Brand:\s*([^<\n]+)/i'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $html, $matches)) {
+                $brand = trim(strip_tags($matches[1]));
+                if (strlen($brand) > 1 && strlen($brand) < 100) {
+                    return $brand;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    private function extractImages($html, $asin) {
+        $images = [];
+        
+        if (preg_match_all('/"large":"([^"]+)"/i', $html, $matches)) {
+            foreach ($matches[1] as $imageUrl) {
+                $imageUrl = str_replace('\\/', '/', $imageUrl);
+                if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                    $images[] = $imageUrl;
+                }
+            }
+        }
+        
+        if (empty($images)) {
+            $images[] = "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg";
+        }
+        
+        return array_slice($images, 0, 5);
+    }
+    
+    private function getDomain($market) {
+        $domains = ['IN' => 'amazon.in', 'US' => 'amazon.com', 'UK' => 'amazon.co.uk'];
+        return $domains[$market] ?? 'amazon.in';
+    }
+}
+
+if (isset($_GET['asin'])) {
+    $scraper = new AmazonAPIScraper();
+    $data = $scraper->scrapeProduct($_GET['asin'], $_GET['market'] ?? 'IN');
+    
+    if ($data) {
+        echo json_encode($data, JSON_PRETTY_PRINT);
+    } else {
+        http_response_code(404);
+        echo json_encode(['error' => 'Unable to fetch current price data']);
+    }
+} else {
+    http_response_code(400);
+    echo json_encode(['error' => 'ASIN parameter required']);
+}
+?>lity, 'in stock') !== false) return 'In Stock';
+            if (stripos($availability, 'out of stock') !== false) return 'Out of Stock';
             if (stripos($availability, 'temporarily') !== false) return 'Temporarily Unavailable';
             return $availability;
         }

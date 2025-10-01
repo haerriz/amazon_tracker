@@ -252,7 +252,7 @@ async function addProduct() {
     
     if (result.success) {
       $('#urlAsin').val('');
-      M.toast({ html: 'Product added successfully!' });
+      M.toast({ html: '✓ Product added successfully!' });
       loadProducts();
     } else {
       M.toast({ html: result.error || 'Failed to add product' });
