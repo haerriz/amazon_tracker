@@ -3,9 +3,12 @@ function getBaseUrl() {
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
   
-
+  if (isLocal) {
+    return '/tracker';
+  }
   
-  return isLocal ? '/tracker' : '';
+  // Production environment
+  return '';
 }
 
 // API endpoints

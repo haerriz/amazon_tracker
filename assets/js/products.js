@@ -219,7 +219,10 @@ async function addProduct() {
   M.toast({ html: 'Adding product...' });
   
   try {
-    const response = await fetch(API.addProduct(), {
+    const apiUrl = API.addProduct();
+    console.log('API URL:', apiUrl);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -227,7 +230,14 @@ async function addProduct() {
       body: JSON.stringify({ asin, market })
     });
     
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const result = await response.json();
+    console.log('API Response:', result);
     
     if (result.success) {
       $('#urlAsin').val('');
@@ -237,7 +247,8 @@ async function addProduct() {
       M.toast({ html: result.error || 'Failed to add product' });
     }
   } catch (error) {
-    M.toast({ html: 'Error connecting to server' });
+    console.error('Add product error:', error);
+    M.toast({ html: `Error: ${error.message}` });
   }
 }
 
