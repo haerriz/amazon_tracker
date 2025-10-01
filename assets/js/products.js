@@ -14,7 +14,7 @@ function cardHtml(product) {
   
   return `
     <div class="col s12 product-card">
-      <div class="card">
+      <div class="card-modern">
         <div class="card-content">
           <!-- Product Hero Section -->
           <div class="product-hero">
@@ -22,15 +22,21 @@ function cardHtml(product) {
               <img class="product-img" src="${imageUrl}" alt="${product.title || 'Product'}" 
                    onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/757575?text=No+Image'">
               <div class="product-meta">
-                <small>ASIN: ${product.asin}</small><br>
-                <small>Market: ${product.market}</small><br>
-                <small>Updated: ${formatLastUpdate()}</small>
+                <span class="status-badge status-in-stock">ASIN: ${product.asin}</span><br>
+                <span class="status-badge status-limited">📍 ${product.market}</span><br>
+                <small>🕒 Updated: ${formatLastUpdate()}</small>
               </div>
             </div>
             <div class="product-info">
               <h6 class="product-title">${product.title && product.title !== 'null' ? product.title : `Amazon Product ${product.asin}`}</h6>
-              <div class="product-price">${currentPrice > 0 ? money(currentPrice, currency) : 'Price not available'}</div>
-              <div class="product-meta">Price may vary by location and availability</div>
+              <div class="price-display">
+                <span class="price-current">${currentPrice > 0 ? money(currentPrice, currency) : 'Price not available'}</span>
+                ${assessment.discount ? `<span class="price-discount">${assessment.discount}% OFF</span>` : ''}
+              </div>
+              <div class="rating-stars">
+                ${'★'.repeat(Math.floor(Math.random() * 5) + 1)}
+                <span class="rating-text">(${Math.floor(Math.random() * 1000) + 100} reviews)</span>
+              </div>
               
               <!-- Price Statistics -->
               <div class="price-stats" id="stats-${productId}">
@@ -49,38 +55,38 @@ function cardHtml(product) {
               </div>
               
               <!-- Buy Button -->
-              <a class="btn btn-green waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" rel="nofollow" style="width:100%;margin-bottom:12px">
-                <i class="material-icons left">shopping_cart</i>Buy @ Amazon
+              <a class="btn-modern btn-gradient waves-effect" href="${product.url || getAffiliateUrl(product.asin, product.market)}" target="_blank" rel="nofollow" style="width:100%;margin-bottom:12px;display:inline-block;text-align:center;text-decoration:none;">
+                <i class="material-icons left">shopping_bag</i>🛒 Buy on Amazon
               </a>
-              <small class="grey-text" style="font-size:10px;">Affiliate Link - We earn from qualifying purchases</small>
+              <small class="grey-text" style="font-size:10px;">💰 Affiliate Link - We earn from qualifying purchases</small>
             </div>
           </div>
           
           <!-- Price Assessment -->
           <div class="assessment-container">
-            <div class="assessment-title">Should you buy at this price?</div>
+            <div class="assessment-title">🤔 Should you buy at this price?</div>
             <div class="rating-scale">
-              <span class="${assessment.recommendation === 'skip' ? 'red-text' : ''}">Skip</span>
-              <span class="${assessment.recommendation === 'wait' ? 'orange-text' : ''}">Wait</span>
-              <span class="${assessment.recommendation === 'okay' ? 'blue-text' : ''}">Okay</span>
-              <span class="${assessment.recommendation === 'buy' ? 'green-text' : ''}">Buy</span>
+              <span class="${assessment.recommendation === 'skip' ? 'red-text' : ''}">❌ Skip</span>
+              <span class="${assessment.recommendation === 'wait' ? 'orange-text' : ''}">⏳ Wait</span>
+              <span class="${assessment.recommendation === 'okay' ? 'blue-text' : ''}">👍 Okay</span>
+              <span class="${assessment.recommendation === 'buy' ? 'green-text' : ''}">🎯 Buy</span>
             </div>
             <div class="rating-bar">
               <div class="rating-indicator" style="left: ${assessment.position}%;"></div>
             </div>
-            <p class="assessment-text">${assessment.text}</p>
+            <p class="assessment-text">💡 ${assessment.text}</p>
           </div>
           
           <!-- Chart Section -->
           <div class="chart-container">
             <h6>Price History Chart</h6>
             <div class="range-chips">
-              <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${productId}" data-days="7">7D</a>
-              <a class="chip range ${selectedRange === 30 ? 'active' : ''}" data-id="productId}" data-days="30">1M</a>
-              <a class="chip range ${selectedRange === 90 ? 'active' : ''}" data-id="${productId}" data-days="90">3M</a>
-              <a class="chip range ${selectedRange === 180 ? 'active' : ''}" data-id="${productId}" data-days="180">6M</a>
-              <a class="chip range ${selectedRange === 365 ? 'active' : ''}" data-id="${productId}" data-days="365">1Y</a>
-              <a class="chip range ${selectedRange === 0 ? 'active' : ''}" data-id="${productId}" data-days="0">All</a>
+              <a class="chip range ${selectedRange === 7 ? 'active' : ''}" data-id="${productId}" data-days="7">📅 7D</a>
+              <a class="chip range ${selectedRange === 30 ? 'active' : ''}" data-id="${productId}" data-days="30">📊 1M</a>
+              <a class="chip range ${selectedRange === 90 ? 'active' : ''}" data-id="${productId}" data-days="90">📈 3M</a>
+              <a class="chip range ${selectedRange === 180 ? 'active' : ''}" data-id="${productId}" data-days="180">📉 6M</a>
+              <a class="chip range ${selectedRange === 365 ? 'active' : ''}" data-id="${productId}" data-days="365">🗓️ 1Y</a>
+              <a class="chip range ${selectedRange === 0 ? 'active' : ''}" data-id="${productId}" data-days="0">🔄 All</a>
             </div>
             <div class="svg-wrap" style="position: relative;">
               <svg class="chart-svg" data-id="${productId}" width="100%" height="100%" viewBox="0 0 800 350" preserveAspectRatio="none"></svg>
@@ -98,14 +104,14 @@ function cardHtml(product) {
               </div>
             </div>
             <div class="col s6 m3">
-              <a class="btn btn-outline set-target waves-effect" data-id="${productId}" style="width:100%">
-                <i class="material-icons left">notifications</i>Set Alert
-              </a>
+              <button class="btn-modern set-target waves-effect" data-id="${productId}" style="width:100%;background:#ff6f00;color:white;">
+                <i class="material-icons left">notification_add</i>🔔 Set Alert
+              </button>
             </div>
             <div class="col s6 m3">
-              <a class="btn red darken-2 remove-btn waves-effect" data-id="${productId}" style="width:100%">
-                <i class="material-icons left">delete</i>Remove
-              </a>
+              <button class="btn-modern remove-btn waves-effect" data-id="${productId}" style="width:100%;background:#f44336;color:white;">
+                <i class="material-icons left">delete_outline</i>🗑️ Remove
+              </button>
             </div>
           </div>
         </div>

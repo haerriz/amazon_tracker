@@ -71,6 +71,8 @@
   
   <!-- Custom Styles -->
   <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/seo-styles.css">
 
   <!-- jQuery -->
@@ -104,30 +106,30 @@
     </section>
 
     <!-- Search Block -->
-    <section class="card search-block">
+    <section class="card-modern search-block">
       <div class="card-content">
         <h2 class="card-title">Track Amazon Product Prices</h2>
         <div class="row" style="margin-bottom:0">
           <div class="input-field col s12 m8">
             <i class="material-icons prefix">search</i>
-            <input id="urlAsin" type="text" placeholder="Enter Amazon Product Link or ASIN" aria-label="Amazon product URL or ASIN">
+            <input id="urlAsin" type="text" class="input-modern" placeholder="Paste Amazon URL or enter ASIN" aria-label="Amazon product URL or ASIN">
             <label for="urlAsin" class="active">Amazon URL or ASIN</label>
           </div>
           <div class="input-field col s6 m2">
             <select id="market" aria-label="Select Amazon market">
-              <option value="IN" selected>India</option>
-              <option value="US">US</option>
-              <option value="UK">UK</option>
+              <option value="IN" selected>🇮🇳 India</option>
+              <option value="US">🇺🇸 US</option>
+              <option value="UK">🇬🇧 UK</option>
             </select>
             <label>Market</label>
           </div>
           <div class="input-field col s6 m2">
-            <button id="btnAdd" class="btn btn-green waves-effect waves-light" style="width:100%" aria-label="Start tracking product price">
-              <i class="material-icons left">add</i>Track Price
+            <button id="btnAdd" class="btn-modern btn-gradient waves-effect waves-light" style="width:100%" aria-label="Start tracking product price">
+              <i class="material-icons left">add_circle</i>Track Price
             </button>
           </div>
         </div>
-        <p class="subtle">Track Amazon price history, get price drop alerts, and find the best deals. Simply paste any Amazon product link or ASIN to start monitoring prices.</p>
+        <p class="subtle">🎯 Track Amazon price history, get price drop alerts, and find the best deals. Simply paste any Amazon product link or ASIN to start monitoring prices.</p>
       </div>
     </section>
 
@@ -135,29 +137,44 @@
     <section class="features-section">
       <div class="row">
         <div class="col s12 m4">
-          <div class="card">
+          <div class="card-modern">
             <div class="card-content center">
-              <i class="material-icons large teal-text">trending_down</i>
-              <h3>Price Drop Alerts</h3>
-              <p>Get notified instantly when Amazon prices drop below your target price. Never miss a deal again.</p>
+              <div class="feature-icon">
+                <i class="material-icons large teal-text">notifications_active</i>
+              </div>
+              <h3>Smart Price Alerts</h3>
+              <p>Get instant notifications when prices drop below your target. AI-powered alerts ensure you never miss the best deals.</p>
+              <div class="feature-stats">
+                <span class="status-badge status-in-stock">✓ Real-time monitoring</span>
+              </div>
             </div>
           </div>
         </div>
         <div class="col s12 m4">
-          <div class="card">
+          <div class="card-modern">
             <div class="card-content center">
-              <i class="material-icons large teal-text">show_chart</i>
-              <h3>Price History Charts</h3>
-              <p>View detailed price history with interactive charts. Track price trends over time to make informed decisions.</p>
+              <div class="feature-icon">
+                <i class="material-icons large teal-text">analytics</i>
+              </div>
+              <h3>Interactive Charts</h3>
+              <p>Beautiful price history charts with hover details, trend analysis, and multiple time ranges for better insights.</p>
+              <div class="feature-stats">
+                <span class="status-badge status-in-stock">📊 Advanced analytics</span>
+              </div>
             </div>
           </div>
         </div>
         <div class="col s12 m4">
-          <div class="card">
+          <div class="card-modern">
             <div class="card-content center">
-              <i class="material-icons large teal-text">public</i>
-              <h3>Multi-Market Support</h3>
-              <p>Track prices across Amazon India, US, and UK. Compare prices across different markets.</p>
+              <div class="feature-icon">
+                <i class="material-icons large teal-text">language</i>
+              </div>
+              <h3>Global Markets</h3>
+              <p>Track prices across Amazon India, US, and UK. Compare international prices and find the best deals worldwide.</p>
+              <div class="feature-stats">
+                <span class="status-badge status-in-stock">🌍 3 markets supported</span>
+              </div>
             </div>
           </div>
         </div>
