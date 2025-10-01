@@ -12,7 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     require_once '../config/database.php';
-    require_once 'simple_scraper.php';
+    require_once '../migrations/auto_migrate.php';
+    require_once 'amazon_api_scraper.php';
+    
+    // Run auto-migrations
+    $migration = new AutoMigration();
+    $migration->runMigrations();
     
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
@@ -43,8 +48,8 @@ try {
         exit;
     }
     
-    // Get product data
-    $scraper = new SimpleScraper();
+    // Get product data with advanced scraper
+    $scraper = new AmazonAPIScraper();
     $productData = $scraper->scrapeProduct($asin, $market);
     
     if (!$productData) {
@@ -70,6 +75,23 @@ try {
     ]);
     
     $productId = $db->lastInsertId();
+    
+    // Insert enhanced product data
+    if ($productData['rating'] || $productData['review_count'] || $productData['brand']) {
+        $stmt = $db->prepare("INSERT INTO enhanced_products 
+            (product_id, rating, review_count, discount_percentage, original_price, availability, brand, images) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $productId,
+            $productData['rating'],
+            $productData['review_count'],
+            $productData['discount'],
+            $productData['original_price'],
+            $productData['availability'],
+            $productData['brand'],
+            json_encode($productData['images'])
+        ]);
+    }
     
     // Add initial price history
     if ($productData['price']) {
