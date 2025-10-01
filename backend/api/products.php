@@ -1,6 +1,6 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+ini_set('display_errors', 0);
+error_reporting(0);
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -206,8 +206,9 @@ class ProductAPI {
     }
 
     private function getAllProducts() {
-        // Check if enhanced_products table exists
-        $enhancedTableExists = $this->tableExists('enhanced_products');
+        try {
+            // Check if enhanced_products table exists
+            $enhancedTableExists = $this->tableExists('enhanced_products');
         
         if ($enhancedTableExists) {
             $stmt = $this->db->prepare("
@@ -310,6 +311,10 @@ class ProductAPI {
         }
 
         echo json_encode($products);
+        } catch (Exception $e) {
+            // Return empty array if there's an error
+            echo json_encode([]);
+        }
     }
 
     private function getHistory($asin) {

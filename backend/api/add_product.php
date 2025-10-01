@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 0);
+error_reporting(0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
@@ -11,9 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    // Log the request for debugging
-    error_log('Add product request: ' . file_get_contents('php://input'));
-    
     require_once '../config/database.php';
     require_once 'amazon_api_scraper.php';
     
@@ -46,6 +46,7 @@ try {
     $stmt = $db->prepare("SELECT id FROM products WHERE asin = ? AND market = ?");
     $stmt->execute([$asin, $market]);
     if ($stmt->fetch()) {
+        http_response_code(400);
         echo json_encode(['error' => 'Product already exists']);
         exit;
     }
