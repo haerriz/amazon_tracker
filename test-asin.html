@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ASIN Parsing</title>
+</head>
+<body>
+    <h1>Test ASIN Parsing</h1>
+    <input type="text" id="testInput" placeholder="Enter Amazon URL or ASIN" style="width: 500px;">
+    <button onclick="testParsing()">Test</button>
+    <div id="result"></div>
+
+    <script src="assets/js/helpers.js"></script>
+    <script>
+        function testParsing() {
+            const input = document.getElementById('testInput').value;
+            const asin = parseASIN(input);
+            
+            document.getElementById('result').innerHTML = `
+                <h3>Results:</h3>
+                <p><strong>Input:</strong> ${input}</p>
+                <p><strong>Parsed ASIN:</strong> ${asin || 'NULL'}</p>
+                <p><strong>Valid:</strong> ${asin ? 'YES' : 'NO'}</p>
+            `;
+            
+            console.log('Input:', input);
+            console.log('Parsed ASIN:', asin);
+        }
+    </script>
+</body>
+</html>

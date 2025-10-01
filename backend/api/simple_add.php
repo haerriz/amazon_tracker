@@ -28,15 +28,26 @@ try {
     $asin = $input['asin'] ?? '';
     $market = $input['market'] ?? 'IN';
     
-    // Debug: log received data
-    error_log('Received input: ' . json_encode($input));
-    error_log('Extracted ASIN: ' . $asin);
+    // If no ASIN, try to extract from URL if provided
+    if (!$asin && isset($input['url'])) {
+        $asin = extractASINFromURL($input['url']);
+    }
     
     if (!$asin) {
         http_response_code(400);
         echo json_encode([
-            'error' => 'ASIN required',
-            'debug' => 'Received data: ' . json_encode($input)
+            'error' => 'ASIN required. Please provide a valid Amazon ASIN or URL.',
+            'received' => $input
+        ]);
+        exit;
+    }
+    
+    // Validate ASIN format
+    if (!preg_match('/^[A-Z0-9]{10}$/i', $asin)) {
+        http_response_code(400);
+        echo json_encode([
+            'error' => 'Invalid ASIN format. ASIN must be 10 alphanumeric characters.',
+            'received_asin' => $asin
         ]);
         exit;
     }
@@ -94,5 +105,28 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Server error occurred']);
+}
+
+function extractASINFromURL($url) {
+    if (!$url) return null;
+    
+    $patterns = [
+        '/\/dp\/([A-Z0-9]{10})(?:\/|\?|#|$)/i',
+        '/\/product\/([A-Z0-9]{10})(?:\/|\?|#|$)/i',
+        '/\/gp\/product\/([A-Z0-9]{10})(?:\/|\?|#|$)/i',
+        '/[?&]asin=([A-Z0-9]{10})/i',
+        '/amazon\.[a-z.]+\/.*\/dp\/([A-Z0-9]{10})/i',
+        '/([A-Z0-9]{10})/i'
+    ];
+    
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $url, $matches)) {
+            if (preg_match('/^[A-Z0-9]{10}$/i', $matches[1])) {
+                return strtoupper($matches[1]);
+            }
+        }
+    }
+    
+    return null;
 }
 ?>

@@ -235,12 +235,15 @@ async function addProduct() {
     console.log('Expected: /backend/api/add_product.php');
     console.log('Base URL:', getBaseUrl());
     
+    const requestData = { asin, market };
+    console.log('Sending request data:', requestData);
+    
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ asin, market })
+      body: JSON.stringify(requestData)
     });
     
     console.log('Response status:', response.status);
