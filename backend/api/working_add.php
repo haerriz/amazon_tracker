@@ -26,15 +26,28 @@ try {
         exit;
     }
     
-    // Try to scrape real Amazon data
+    // Try to scrape real Amazon data with enhanced patterns
     $url = "https://amazon.in/dp/{$asin}";
+    $userAgents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ];
+    
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        CURLOPT_SSL_VERIFYPEER => false
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_USERAGENT => $userAgents[array_rand($userAgents)],
+        CURLOPT_HTTPHEADER => [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language: en-US,en;q=0.9,hi;q=0.8',
+            'Cache-Control: no-cache'
+        ],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_ENCODING => 'gzip, deflate'
     ]);
     
     $html = curl_exec($ch);
@@ -44,15 +57,45 @@ try {
     $title = null;
     $price = null;
     
-    if ($httpCode === 200 && $html) {
-        // Extract title
-        if (preg_match('/<span[^>]*id="productTitle"[^>]*>\s*([^<]+?)\s*<\/span>/i', $html, $matches)) {
-            $title = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
+    if ($httpCode === 200 && $html && strlen($html) > 1000) {
+        // Enhanced title extraction
+        $titlePatterns = [
+            '/<span[^>]*id="productTitle"[^>]*>\s*([^<]+?)\s*<\/span>/i',
+            '/<h1[^>]*class="[^"]*product[^"]*title[^"]*"[^>]*>\s*([^<]+?)\s*<\/h1>/i',
+            '/<title>\s*([^<]+?)\s*[-:]\s*Amazon/i'
+        ];
+        
+        foreach ($titlePatterns as $pattern) {
+            if (preg_match($pattern, $html, $matches)) {
+                $title = trim(html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8'));
+                $title = preg_replace('/\s+/', ' ', $title);
+                $title = preg_replace('/\s*[-:]\s*Amazon.*$/i', '', $title);
+                if (strlen($title) > 10 && strlen($title) < 500) {
+                    break;
+                }
+            }
         }
         
-        // Extract price
-        if (preg_match('/₹\s*([0-9,]+(?:\.[0-9]{2})?)/i', $html, $matches)) {
-            $price = floatval(str_replace(',', '', $matches[1]));
+        // Enhanced price extraction
+        $pricePatterns = [
+            '/<span[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([0-9,]+)<\/span><span[^>]*class="[^"]*a-price-fraction[^"]*"[^>]*>([0-9]+)<\/span>/',
+            '/<span[^>]*class="[^"]*a-offscreen[^"]*"[^>]*>₹\s*([0-9,]+(?:\.[0-9]{2})?)<\/span>/',
+            '/<span[^>]*class="[^"]*a-price-whole[^"]*"[^>]*>([0-9,]+)<\/span>/',
+            '/₹\s*([0-9,]+(?:\.[0-9]{2})?)/i'
+        ];
+        
+        foreach ($pricePatterns as $pattern) {
+            if (preg_match($pattern, $html, $matches)) {
+                if (isset($matches[2])) {
+                    $priceStr = $matches[1] . '.' . $matches[2];
+                } else {
+                    $priceStr = $matches[1];
+                }
+                $price = floatval(str_replace(',', '', $priceStr));
+                if ($price > 0 && $price < 10000000) {
+                    break;
+                }
+            }
         }
     }
     
@@ -62,9 +105,10 @@ try {
         $database = new Database();
         $db = $database->getConnection();
         
-        // Insert product
-        $stmt = $db->prepare("INSERT INTO products (asin, market, title, current_price, url) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$asin, $market, $title, $price, $url]);
+        // Insert product with image
+        $imageUrl = "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg";
+        $stmt = $db->prepare("INSERT INTO products (asin, market, title, image_url, current_price, url) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$asin, $market, $title, $imageUrl, $price, $url]);
         
         $productId = $db->lastInsertId();
         
@@ -74,11 +118,13 @@ try {
         
         echo json_encode([
             'success' => true,
+            'message' => 'Product successfully added with real Amazon data!',
             'product' => [
                 'id' => $productId,
                 'asin' => $asin,
                 'title' => $title,
                 'price' => $price,
+                'image' => $imageUrl,
                 'url' => $url
             ]
         ]);
