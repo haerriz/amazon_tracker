@@ -52,9 +52,12 @@ try {
     $scraper = new AmazonAPIScraper();
     $productData = $scraper->scrapeProduct($asin, $market);
     
-    if (!$productData) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch product data']);
+    if (!$productData || !$productData['title'] || !$productData['price']) {
+        http_response_code(400);
+        echo json_encode([
+            'error' => 'Unable to extract product data from Amazon. Please check the ASIN/URL and try again.',
+            'details' => 'Real-time scraping failed - no fake data provided'
+        ]);
         exit;
     }
     

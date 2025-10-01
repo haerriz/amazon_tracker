@@ -13,15 +13,15 @@ class AmazonAPIScraper {
         $domain = $this->getDomain($market);
         $url = "https://{$domain}/dp/{$asin}";
         
-        // Try multiple scraping methods
+        // Only return real scraped data - no fake data
         $data = $this->scrapeWithAdvancedCurl($url, $asin, $market);
         
         if ($data && $data['title'] && $data['price']) {
             return $data;
         }
         
-        // Fallback with realistic data
-        return $this->generateRealisticData($asin, $market, $url);
+        // Return null if no real data found
+        return null;
     }
     
     private function scrapeWithAdvancedCurl($url, $asin, $market) {
@@ -273,87 +273,8 @@ class AmazonAPIScraper {
     }
     
     private function generateRealisticData($asin, $market, $url) {
-        // Specific product data for known ASINs
-        $knownProducts = [
-            'B091Q6FNCZ' => [
-                'title' => 'Titan Minimalist Quartz Analog with Date Anthracite Dial Silver Metal Strap Watch for Men - NP1806SM02',
-                'price' => 3195,
-                'original_price' => 3995,
-                'rating' => 4.2,
-                'review_count' => 133,
-                'brand' => 'Titan',
-                'availability' => 'In Stock'
-            ],
-            'B0C4LV1MLF' => [
-                'title' => 'Men\'s Cotton Checkered Trousers Expandable Waist Stretchable Pants',
-                'price' => 899,
-                'original_price' => 1299,
-                'rating' => 4.1,
-                'review_count' => 245,
-                'brand' => 'Fashion Brand',
-                'availability' => 'In Stock'
-            ],
-            'B0BQHS5P9R' => [
-                'title' => 'Skechers Men\'s Go Walk Max-54601 Walking Shoes',
-                'price' => 2794,
-                'original_price' => 4299,
-                'rating' => 4.2,
-                'review_count' => 1247,
-                'brand' => 'Skechers',
-                'availability' => 'In Stock'
-            ]
-        ];
-        
-        if (isset($knownProducts[$asin])) {
-            $product = $knownProducts[$asin];
-            $discount = round((($product['original_price'] - $product['price']) / $product['original_price']) * 100);
-            
-            return [
-                'asin' => $asin,
-                'title' => $product['title'],
-                'price' => $product['price'],
-                'original_price' => $product['original_price'],
-                'discount' => $discount,
-                'rating' => $product['rating'],
-                'review_count' => $product['review_count'],
-                'availability' => $product['availability'],
-                'brand' => $product['brand'],
-                'images' => ["https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg"],
-                'url' => $url,
-                'scraped_at' => date('Y-m-d H:i:s')
-            ];
-        }
-        
-        // Fallback for unknown products
-        $categories = [
-            'B0C' => ['category' => 'Fashion', 'price_range' => [500, 3000], 'brand' => 'Generic Fashion'],
-            'B0D' => ['category' => 'Electronics', 'price_range' => [1000, 50000], 'brand' => 'Tech Brand'],
-            'B0B' => ['category' => 'Home & Kitchen', 'price_range' => [300, 5000], 'brand' => 'Home Brand'],
-            'B09' => ['category' => 'Electronics', 'price_range' => [2000, 80000], 'brand' => 'Premium Brand'],
-            'B08' => ['category' => 'Electronics', 'price_range' => [1500, 40000], 'brand' => 'Popular Brand']
-        ];
-        
-        $prefix = substr($asin, 0, 3);
-        $category = $categories[$prefix] ?? ['category' => 'General', 'price_range' => [500, 5000], 'brand' => 'Amazon'];
-        
-        $price = rand($category['price_range'][0], $category['price_range'][1]);
-        $originalPrice = $price + rand(100, $price * 0.3);
-        $discount = round((($originalPrice - $price) / $originalPrice) * 100);
-        
-        return [
-            'asin' => $asin,
-            'title' => $this->generateRealisticTitle($asin, $category['category']),
-            'price' => $price,
-            'original_price' => $originalPrice,
-            'discount' => $discount,
-            'rating' => round(rand(35, 47) / 10, 1),
-            'review_count' => rand(50, 2000),
-            'availability' => 'In Stock',
-            'brand' => $category['brand'],
-            'images' => ["https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg"],
-            'url' => $url,
-            'scraped_at' => date('Y-m-d H:i:s')
-        ];
+        // Return null - no fake data, only real scraping
+        return null;
     }
     
     private function generateRealisticTitle($asin, $category) {

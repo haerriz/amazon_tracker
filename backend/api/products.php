@@ -98,21 +98,19 @@ class ProductAPI {
             return;
         }
 
-        // Use simple scraper for reliable data
-        require_once 'simple_scraper.php';
-        $simpleScraper = new SimpleScraper();
-        $productData = $simpleScraper->scrapeProduct($asin, $market);
+        // Use advanced scraper for real data only
+        require_once 'amazon_api_scraper.php';
+        $scraper = new AmazonAPIScraper();
+        $productData = $scraper->scrapeProduct($asin, $market);
         
-        // Try real-time scraper as backup
-        if (!$productData || !$productData['title']) {
-            require_once 'realtime_scraper.php';
-            $realtimeScraper = new RealtimeScraper();
-            $productData = $realtimeScraper->scrapeProduct($asin, $market);
-        }
-        
-        // Final fallback
-        if (!$productData || !$productData['title']) {
-            $productData = $this->generateFallbackData($asin, $market);
+        // No fallback - only real data
+        if (!$productData || !$productData['title'] || !$productData['price']) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => 'Unable to extract product data from Amazon. Please verify the ASIN/URL is correct.',
+                'details' => 'Only real Amazon data is supported - no fake data provided'
+            ]);
+            return;
         }
 
         // Generate affiliate URL
@@ -406,26 +404,8 @@ class ProductAPI {
     }
     
     private function generateFallbackData($asin, $market) {
-        // Generate realistic product data based on ASIN patterns
-        $productTypes = [
-            'B09G' => ['type' => 'Apple iPhone', 'price' => rand(45000, 85000)],
-            'B08N' => ['type' => 'Amazon Echo', 'price' => rand(3000, 15000)],
-            'B07X' => ['type' => 'Fire TV Stick', 'price' => rand(3000, 8000)],
-            'B086' => ['type' => 'Apple AirPods', 'price' => rand(15000, 30000)],
-            'B08C' => ['type' => 'Samsung Galaxy', 'price' => rand(8000, 25000)],
-            'B07H' => ['type' => 'Kindle', 'price' => rand(8000, 20000)],
-            'B0BQ' => ['type' => 'Skechers Shoes', 'price' => rand(2500, 8000)],
-            'B0D' => ['type' => 'Electronics', 'price' => rand(1000, 50000)]
-        ];
-        
-        $prefix = substr($asin, 0, 4);
-        $fallback = $productTypes[$prefix] ?? ['type' => 'Product', 'price' => rand(500, 5000)];
-        
-        return [
-            'title' => $fallback['type'] . ' (' . $asin . ')',
-            'price' => $fallback['price'],
-            'image' => "https://images-na.ssl-images-amazon.com/images/P/{$asin}.01.L.jpg"
-        ];
+        // No fallback data - return null to force real scraping
+        return null;
     }
     
     private function generatePriceHistory($productId, $currentPrice) {
