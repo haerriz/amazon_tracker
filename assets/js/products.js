@@ -221,6 +221,8 @@ async function addProduct() {
   try {
     const apiUrl = API.addProduct();
     console.log('API URL:', apiUrl);
+    console.log('Expected: /backend/api/add_product.php');
+    console.log('Base URL:', getBaseUrl());
     
     const response = await fetch(apiUrl, {
       method: 'POST',

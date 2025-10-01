@@ -33,11 +33,13 @@ class ProductAPI {
 
         switch ($method) {
             case 'POST':
+                // Check if URL ends with /add
                 if (end($segments) === 'add' || strpos($path, '/add') !== false) {
                     $this->addProduct();
                 } else {
-                    // Handle POST to main products endpoint as add product
-                    $this->addProduct();
+                    // Return error for invalid POST endpoint
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Invalid endpoint. Use /add for adding products']);
                 }
                 break;
             case 'GET':
